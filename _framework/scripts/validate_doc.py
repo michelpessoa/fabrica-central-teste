@@ -1,0 +1,468 @@
+#!/usr/bin/env python3
+"""
+validate_doc.py
+
+Mecaniza o gate_content_quality (workflow-rules.yaml, seção 15). O gate
+existia só como autorrevisão em prosa — uma IA checando a si mesma no
+momento em que tem incentivo para não checar. Este script é o sinal
+externo que faltava.
+
+Uso:
+    python3 validate_doc.py <arquivo.md | diretório> [...] [--report-only]
+
+Checa, por documento:
+  1. Front-matter completo (campos obrigatórios de frontmatter_schema).
+  2. Nenhum placeholder banido ("TBD", "definir depois", ...).
+  3. `NEEDS CLARIFICATION` pendente não passa de in_review.
+  4. Seções obrigatórias do tipo presentes.
+  5. SPEC/PRD: todo requisito funcional tem RF-ID próprio.
+  6. SPEC/PRD: todo critério de aceite está em notação EARS.
+  7. SPEC/TS: a seção de contratos aponta arquivo/módulo ("onde").
+  8. SPEC: toda linha de RF tem coluna Arquivos preenchida (RF06, SDD-DTF-0030).
+  9. SDD: toda linha de task tem coluna Arquivos preenchida; "Decomposição em
+     tasks" ausente sem dispensa por sizing/RF único é gate (RF06/RF07,
+     SDD-DTF-0030).
+  10. SPEC: seção "Requisitos transversais (sweep)" presente, com todas as
+      categorias fixas cobertas e Destino preenchido (RF-ID ou n/a + motivo),
+      não-retroativo (STRAT-DTF-0003 item 10, SDD-DTF-0039).
+
+Exit 1 se houver problema; --report-only sempre sai 0.
+"""
+
+import re
+import sys
+from pathlib import Path
+
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+
+from framework_lib import (  # noqa: E402
+    INCIDENT_STATUSES,
+    VALID_STATUSES,
+    iter_documents,
+    load_rules,
+    project_version,
+    read_frontmatter,
+    report,
+    rule_applies_since_date,
+    split_table_row,
+)
+
+# Em que versão cada exigência entrou. Regra não vale retroativamente:
+# projeto mapeado sob 1.6.0 não é reprovado por regra da 1.7.0
+# (lessons_policy.non_retroactive).
+RULE_SINCE = {
+    "placeholders": "1.7.0",
+    "needs_clarification": "1.7.0",
+    "rf_id": "1.7.0",
+    "contract_where": "1.7.0",
+    "ears": "2.0.0",
+    "sweep": "2.3.0",
+}
+
+# gate_content_quality item 4: termos que descrevem o que fazer sem mostrar
+# como. A busca é literal e case-insensitive, igual ao "scan de placeholder"
+# descrito no self_review_checklist.
+BANNED_PLACEHOLDERS = [
+    "tbd",
+    "to be defined",
+    "definir depois",
+    "a definir",
+    "ajustar conforme necessário",
+    "conforme necessário",
+    "seguir o padrão do projeto",
+    "seguir padrão do projeto",
+    "tratar erros apropriadamente",
+    "tratamento de erro apropriado",
+    "preencher depois",
+    "detalhar depois",
+    # Vocabulário vago em critério de aceite (STRAT-DTF-0003, item G,
+    # lição do tlc-spec-lean): descreve o resultado desejado sem dizer
+    # como verificá-lo — mesma categoria de placeholder que "tratar
+    # erros apropriadamente" acima, só que sem o "erros".
+    "de forma eficiente",
+    "de forma apropriada",
+    "de forma robusta",
+    "de maneira eficiente",
+    "com desempenho adequado",
+    "o mais rápido possível",
+    "gracefully",
+    "properly",
+    "efficiently",
+]
+
+NEEDS_CLARIFICATION = re.compile(r"NEEDS CLARIFICATION", re.IGNORECASE)
+
+# Status a partir dos quais o documento é tratado como decidido — daí em
+# diante placeholder e ambiguidade pendente deixam de ser tolerados.
+DECIDED_STATUSES = {"approved", "implemented"}
+
+# gate_content_quality.applies_to é explícito: "PRD, Tech Spec e SDD"
+# (mais SPEC, que os substitui). Um RFC que difere um detalhe para a Tech
+# Spec — "(a definir na Tech Spec)" — está fazendo exatamente o que uma
+# RFC deve fazer, e reprovar isso é o validator sendo mais estrito que a
+# regra que ele mecaniza. Falso positivo desgasta o gate inteiro.
+CONTENT_GATE_TYPES = {"SPEC", "PRD", "TS", "SDD"}
+
+REQUIRED_FRONTMATTER = ["id", "type", "title", "status", "project", "owner", "created", "updated"]
+
+REQUIRED_SECTIONS = {
+    "RFC": ["Contexto", "Problema", "Objetivos", "Alternativas", "Proposta", "Riscos"],
+    "ADR": ["Contexto", "Decisão", "Consequências"],
+    "SPEC": [
+        "Objetivo",
+        "Requisitos funcionais",
+        "Contratos técnicos",
+        "Estratégia de teste",
+        "Fora de escopo",
+    ],
+    "PRD": ["Objetivo", "Requisitos funcionais", "Critérios de aceite"],
+    "TS": ["Contratos técnicos"],
+    "SDD": ["Requisitos consolidados", "Critérios de aceite"],
+}
+
+# Um RF-ID é o identificador próprio de um requisito funcional, exigido
+# pelo item 1 do gate. "1." numerado não serve: não sobrevive a reordenação
+# e não dá para referenciar de um critério de aceite.
+RF_ID = re.compile(r"\bRF-?\d+\b")
+
+# EARS (Easy Approach to Requirements Syntax) — mesma notação adotada por
+# AWS Kiro e por tlc-spec-driven. Um critério de aceite precisa dizer, em
+# forma verificável, QUANDO vale e O QUE o sistema faz. As cinco formas:
+#
+#   ubíqua      "O sistema deve <resposta>"
+#   dirigida a evento   "Quando <gatilho>, o sistema deve <resposta>"
+#   dirigida a estado   "Enquanto <estado>, o sistema deve <resposta>"
+#   indesejada  "Se <condição>, então o sistema deve <resposta>"
+#   opcional    "Onde <capacidade>, o sistema deve <resposta>"
+#
+# A checagem é deliberadamente rasa: exige o verbo de obrigação (a
+# "resposta") e reconhece o gatilho quando existe. Não tenta interpretar
+# semântica — um validator que erra e reprova critério bom é pior que
+# nenhum.
+EARS_RESPONSE = re.compile(r"\b(deve|deverá|devem|deverão)\b", re.IGNORECASE)
+EARS_TRIGGER = re.compile(r"^\s*(quando|enquanto|se|onde|ao|após|dado que)\b", re.IGNORECASE)
+
+# "onde" de um contrato: caminho de arquivo com extensão, ou módulo com barra.
+FILE_HINT = re.compile(r"[\w./-]+\.(?:ts|tsx|js|jsx|py|go|rs|java|kt|rb|sql|yaml|yml|json|prisma|mjs)\b")
+
+# RF06/RF07 (SDD-DTF-0030, paralelismo derivado): "Rollout: não retroativo —
+# SDD/SPEC já approved/implemented não ganham a seção nova" — como vários
+# documentos já implementados foram criados no mesmo dia desta SDD, data de
+# criação não discrimina. O gate vale só enquanto o documento ainda está
+# sendo redigido (draft/in_review); um documento que já virou approved ou
+# implemented antes desta regra existir fica congelado nesse formato para
+# sempre (bump de framework.version é fora de escopo desta SDD).
+DRAFTING_STATUSES = {"draft", "in_review"}
+
+TASK_NUM = re.compile(r"^\d+$")
+
+# STRAT-DTF-0003 item 10 (E8 do tlc-spec-lean): categorias de requisito
+# transversal que ninguém escreve por padrão. Lista fixa — mudar a lista
+# é mudança de regra (workflow-rules.yaml), não decisão de quem redige a
+# SPEC.
+SWEEP_CATEGORIES = [
+    "autorização / permissão",
+    "concorrência",
+    "idempotência",
+    "observabilidade",
+    "falha de dependência externa",
+    "validação de entrada",
+    "limite de volume / rate",
+]
+
+
+def scannable(body: str) -> str:
+    """
+    Corpo sem as linhas de instrução do template (blockquote `>`).
+
+    A prosa que ENSINA a regra cita os termos banidos por definição — o
+    template diz "proibido usar TBD". Escanear essas linhas faria todo
+    documento reprovar pela instrução que ele carrega, não pelo conteúdo
+    que o autor escreveu.
+    """
+    return "\n".join(ln for ln in body.splitlines() if not ln.lstrip().startswith(">"))
+
+
+def section_body(body: str, heading: str) -> str | None:
+    """Retorna o texto de uma seção `## Heading` até o próximo heading de mesmo nível."""
+    pattern = re.compile(
+        rf"^#{{2,3}}\s*{re.escape(heading)}.*?$(.*?)(?=^#{{2,3}}\s|\Z)",
+        re.IGNORECASE | re.MULTILINE | re.DOTALL,
+    )
+    m = pattern.search(body)
+    return m.group(1) if m else None
+
+
+def check_document(path: Path, version: str | None = None) -> tuple[list, list]:
+    problems, warnings = [], []
+    if version is None:
+        version = project_version(path)
+
+    try:
+        fm, body = read_frontmatter(path)
+    except ValueError as exc:
+        return [str(exc)], []
+
+    if not fm:
+        return [f"{path}: sem bloco de front-matter."], []
+
+    rules = load_rules()
+
+    def applies(rule: str) -> bool:
+        return rule_applies_since_date(rules, RULE_SINCE[rule], fm.get("created"), version)
+
+    doc_id = fm.get("id") or path.name
+    doc_type = fm.get("type")
+    status = fm.get("status")
+
+    for field in REQUIRED_FRONTMATTER:
+        if fm.get(field) in (None, ""):
+            problems.append(f"{doc_id}: front-matter sem `{field}` (obrigatório).")
+
+    allowed = INCIDENT_STATUSES if doc_type == "INC" else VALID_STATUSES
+    if status and status not in allowed:
+        problems.append(f"{doc_id}: status inválido '{status}'.")
+
+    prose = scannable(body)
+    lowered = prose.lower()
+    scan_placeholders = doc_type in CONTENT_GATE_TYPES and applies("placeholders")
+    for term in BANNED_PLACEHOLDERS if scan_placeholders else []:
+        if term in lowered:
+            line = next(
+                (
+                    i
+                    for i, ln in enumerate(body.splitlines(), 1)
+                    if term in ln.lower() and not ln.lstrip().startswith(">")
+                ),
+                None,
+            )
+            where = f" (linha {line})" if line else ""
+            msg = f"{doc_id}: placeholder banido '{term}'{where} — gate_content_quality item 4."
+            (problems if status in DECIDED_STATUSES else warnings).append(msg)
+
+    if doc_type in CONTENT_GATE_TYPES and applies("needs_clarification") and NEEDS_CLARIFICATION.search(prose):
+        msg = (
+            f"{doc_id}: tem `NEEDS CLARIFICATION` pendente — "
+            "gate_content_quality item 5 proíbe avançar para approved assim."
+        )
+        (problems if status in DECIDED_STATUSES else warnings).append(msg)
+
+    for heading in REQUIRED_SECTIONS.get(doc_type, []):
+        if section_body(body, heading) is None:
+            problems.append(f"{doc_id}: seção obrigatória ausente: '{heading}'.")
+
+    if doc_type in ("PRD", "SPEC"):
+        reqs = section_body(body, "Requisitos funcionais")
+        if reqs and applies("rf_id") and not RF_ID.search(reqs):
+            problems.append(
+                f"{doc_id}: 'Requisitos funcionais' sem RF-ID próprio "
+                "(gate_content_quality item 1) — lista numerada não é id."
+            )
+
+    if doc_type in ("PRD", "SPEC"):
+        # Rigor de EARS vale para SPEC (tipo novo). Em PRD legado é aviso:
+        # projeto mapeado sob 1.x não migra (lessons_policy.non_retroactive).
+        strict = doc_type == "SPEC"
+        ears_checker = check_ears if applies("ears") else lambda *_: []
+        for problem in ears_checker(doc_id, section_body(body, "Requisitos funcionais")):
+            (problems if strict else warnings).append(problem)
+
+    if doc_type in ("TS", "SPEC"):
+        contracts = section_body(body, "Contratos técnicos")
+        if contracts and applies("contract_where") and not FILE_HINT.search(contracts):
+            warnings.append(
+                f"{doc_id}: 'Contratos técnicos' não aponta nenhum arquivo/módulo "
+                "('onde' do gate_content_quality item 2)."
+            )
+
+    drafting = status in DRAFTING_STATUSES
+    if drafting and doc_type == "SPEC":
+        problems += check_files_column(doc_id, doc_type, section_body(body, "Requisitos funcionais"))
+        if applies("sweep"):
+            problems += check_sweep_section(doc_id, body)
+    if drafting and doc_type == "SDD":
+        problems += check_files_column(doc_id, doc_type, section_body(body, "Decomposição em tasks"))
+        problems += check_tasks_section(doc_id, fm, body)
+
+    return problems, warnings
+
+
+def check_ears(doc_id: str, section: str | None) -> list:
+    """
+    Checa a coluna "Critério de aceite" da tabela de requisitos funcionais
+    contra a notação EARS. Linha sem RF-ID ou sem critério preenchido é
+    ignorada — isso é trabalho do check de RF-ID, não deste.
+
+    Critério é sempre a 3a coluna (índice 2): RF-ID | Requisito | Critério
+    [| Arquivos]. A coluna `Arquivos` (SDD-DTF-0030) é opcional e sempre
+    vem depois — usar `cells[-1]` aqui pegaria `Arquivos` em vez do
+    critério em toda SPEC que já adotou a coluna nova.
+    """
+    if not section:
+        return []
+    problems = []
+    for line in section.splitlines():
+        line = line.strip()
+        if not line.startswith("|"):
+            continue
+        cells = split_table_row(line)
+        if len(cells) < 3:
+            continue
+        rf_id, criterion = cells[0], cells[2]
+        if not RF_ID.search(rf_id) or not criterion:
+            continue
+        if not EARS_RESPONSE.search(criterion):
+            problems.append(
+                f"{doc_id}: critério de {rf_id} não está em EARS — falta o verbo "
+                f"de obrigação ('deve'): '{criterion[:60]}'."
+            )
+        elif not EARS_TRIGGER.match(criterion) and not criterion.lower().startswith("o "):
+            problems.append(
+                f"{doc_id}: critério de {rf_id} não abre com gatilho EARS "
+                "(Quando/Enquanto/Se/Onde) nem com a forma ubíqua ('O sistema "
+                f"deve...'): '{criterion[:60]}'."
+            )
+    return problems
+
+
+def check_files_column(doc_id: str, doc_type: str, section: str | None) -> list:
+    """
+    RF06 (SDD-DTF-0030): toda linha de RF (tabela "Requisitos funcionais"
+    da SPEC) ou de task (tabela "Decomposição em tasks" da SDD) tem a
+    coluna Arquivos preenchida — usada por `parallel_plan.py` para derivar
+    paralelismo. `(decisão pura)` conta como preenchida.
+    """
+    if not section:
+        return []
+    problems = []
+    for line in section.splitlines():
+        line = line.strip()
+        if not line.startswith("|"):
+            continue
+        cells = split_table_row(line)
+        if doc_type == "SPEC":
+            if len(cells) < 4 or not RF_ID.search(cells[0]):
+                continue
+            row_id, files = cells[0], cells[3]
+        else:
+            if len(cells) < 5 or not TASK_NUM.match(cells[0]):
+                continue
+            row_id, files = cells[0], cells[3]
+        if not files:
+            problems.append(
+                f"{doc_id}: linha '{row_id}' com coluna Arquivos vazia — gate RF06 "
+                "(SDD-DTF-0030): preencha caminho(s) relativo(s) ou '(decisão pura)'."
+            )
+    return problems
+
+
+def check_tasks_section(doc_id: str, fm: dict, body: str) -> list:
+    """
+    RF07 (SDD-DTF-0030): "Decomposição em tasks" é opcional só quando a SDD
+    declara `sizing: small` ou tem um único RF-ID em "Requisitos
+    consolidados" — fora isso, ausência da seção é gate.
+    """
+    if section_body(body, "Decomposição em tasks") is not None:
+        return []
+    if fm.get("sizing") == "small":
+        return []
+    consolidated = section_body(body, "Requisitos consolidados") or ""
+    rf_ids = set(RF_ID.findall(consolidated))
+    if len(rf_ids) <= 1:
+        return []
+    return [
+        f"{doc_id}: sem seção 'Decomposição em tasks' e não elegível para dispensa "
+        f"(sizing != small, {len(rf_ids)} RFs consolidados) — gate RF07 (SDD-DTF-0030)."
+    ]
+
+
+def check_sweep_section(doc_id: str, body: str) -> list:
+    """
+    STRAT-DTF-0003 item 10 (E8 tlc-spec-lean): toda SPEC tem a seção
+    "Requisitos transversais (sweep)" com uma linha por categoria de
+    SWEEP_CATEGORIES, e cada linha tem a coluna `Destino` preenchida —
+    RF-ID que cobre a categoria, ou `n/a` com motivo na coluna seguinte.
+    Não-retroativo: só se aplica a partir de RULE_SINCE["sweep"]
+    (`applies("sweep")`, checado por quem chama), então SPECs redigidas
+    antes da seção existir no template não são reprovadas por não terem
+    seção que não existia quando foram escritas.
+    """
+    section = section_body(body, "Requisitos transversais (sweep)")
+    if section is None:
+        return [f"{doc_id}: seção obrigatória ausente: 'Requisitos transversais (sweep)' (STRAT-DTF-0003 item 10)."]
+
+    rows: dict[str, list[str]] = {}
+    for line in section.splitlines():
+        line = line.strip()
+        if not line.startswith("|"):
+            continue
+        cells = split_table_row(line)
+        if len(cells) < 2:
+            continue
+        category = cells[0].lower()
+        if category in ("categoria", "---"):
+            continue
+        rows[category] = cells
+
+    problems = []
+    for category in SWEEP_CATEGORIES:
+        row = rows.get(category)
+        if row is None:
+            problems.append(
+                f"{doc_id}: 'Requisitos transversais (sweep)' sem linha para '{category}' (STRAT-DTF-0003 item 10)."
+            )
+            continue
+        destino = row[1] if len(row) > 1 else ""
+        if not destino:
+            problems.append(
+                f"{doc_id}: sweep '{category}' com coluna Destino vazia — "
+                "use um RF-ID ou 'n/a' (STRAT-DTF-0003 item 10)."
+            )
+        elif destino.lower() == "n/a":
+            motivo = row[2] if len(row) > 2 else ""
+            if not motivo:
+                problems.append(f"{doc_id}: sweep '{category}' marcado 'n/a' sem motivo (STRAT-DTF-0003 item 10).")
+        elif not RF_ID.search(destino):
+            problems.append(
+                f"{doc_id}: sweep '{category}' com Destino '{destino}' não é RF-ID nem 'n/a' (STRAT-DTF-0003 item 10)."
+            )
+    return problems
+
+
+def collect(targets) -> list[Path]:
+    paths = []
+    for target in targets:
+        p = Path(target)
+        if p.is_dir():
+            paths.extend(iter_documents(p))
+        elif p.is_file():
+            paths.append(p)
+        else:
+            raise SystemExit(f"Não encontrado: {target}")
+    return paths
+
+
+def main() -> int:
+    args = [a for a in sys.argv[1:] if not a.startswith("--")]
+    report_only = "--report-only" in sys.argv
+    if not args:
+        print(__doc__)
+        return 1
+
+    paths = collect(args)
+    problems, warnings = [], []
+    for path in paths:
+        p, w = check_document(path)
+        problems += p
+        warnings += w
+
+    return report(
+        problems,
+        warnings,
+        f"✅ {len(paths)} documento(s) passaram no gate de qualidade de conteúdo.",
+        report_only=report_only,
+    )
+
+
+if __name__ == "__main__":
+    sys.exit(main())

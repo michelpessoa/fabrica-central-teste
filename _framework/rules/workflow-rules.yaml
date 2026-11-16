@@ -1,0 +1,1505 @@
+##############################################################################
+# workflow-rules.yaml
+#
+# Fonte única de verdade do Framework de Documentação & Rastreabilidade
+# para uso com IA. Qualquer skill, prompt ou automação (Claude, Cursor,
+# Copilot, ChatGPT, Gemini etc.) DEVE seguir exatamente as regras descritas
+# aqui. Se um comportamento não está aqui, não deve ser inventado pela IA.
+#
+# Alterar este arquivo é a ÚNICA forma correta de evoluir o framework.
+# Os prompts (universal.md, cursor, copilot) e a Claude Skill são apenas
+# "renderizações" destas regras em formatos diferentes — todos devem
+# produzir o mesmo resultado para a mesma entrada.
+##############################################################################
+
+framework:
+  name: "Framework de Documentação & Rastreabilidade para IA"
+  version: "2.3.2"
+  last_updated: "2026-09-25"
+  changelog:
+    - version: "2.3.2"
+      date: "2026-09-25"
+      summary: >
+        SPEC-DTF-0021: correção de texto, sem mudança de comportamento,
+        não-retroativa. Seção 3 (fluxo), seção 12 (capabilities), seções
+        14, 15 e 17 e mais oito trechos deixam de apresentar PRD e
+        Tech Spec como passo do fluxo novo e passam a SPEC; cláusula de
+        legado sob 1.x preservada. Nenhum gate, critério, sizing, ciclo
+        de status ou front-matter muda. Teste de regressão
+        test_prd_ts_texto.py.
+    - version: "2.3.1"
+      date: "2026-09-25"
+      summary: >
+        SPEC-DTF-0017 / RFC-DTF-0008 (SDD-DTF-0042): correção de texto,
+        sem mudança de comportamento, não-retroativa. O gate
+        gate_implementation_before_code deixa de mandar verificar "PRD
+        e/ou Tech Spec" e de citar a chave inexistente
+        decision_gates.prd_ts_to_sdd; passa a SPEC e
+        decision_gates.spec_to_sdd (cláusula de legado sob 1.x
+        preservada). sdd.template.md do bundle volta a espelhar o
+        original e ganham testes de regressão de texto do gate e de
+        paridade de templates.
+    - version: "2.3.0"
+      date: "2026-09-22"
+      summary: >
+        SDD-DTF-0039 (STRAT-DTF-0003, item 10, E8 do tlc-spec-lean): a
+        SPEC ganha a seção "Requisitos transversais (sweep)" — lista fixa
+        de categorias que ninguém escreve por padrão (autorização/
+        permissão, concorrência, idempotência, observabilidade, falha de
+        dependência externa, validação de entrada, limite de volume/
+        rate), cada uma com `Destino` (RF-ID que cobre) ou `n/a` + motivo;
+        célula vazia é gate. Mecanizado em `validate_doc.py`
+        (`check_sweep_section`), não-retroativo por `created` (regra
+        `sweep`, RULE_SINCE 2.3.0): SPEC redigida antes da seção existir
+        no template não é reprovada por não a ter.
+    - version: "2.2.0"
+      date: "2026-09-22"
+      summary: >
+        RFC-DTF-0007/ADR-DTF-0007/SPEC-DTF-0014: `verify-sdd` ganha o
+        passo "0. Fidelidade à origem", antes do passo 1 atual — confirma
+        que a SDD sob verificação é fiel ao(s) documento(s) em
+        `source_docs`, não só que o código bate com a SDD. Parte
+        mecanizada (`check_source_docs.py`: existência, status e url de
+        cada entrada de `source_docs`) e parte de checklist estruturado
+        não-mecanizado (todo RF-ID representado, nenhum critério
+        relaxado, todo contrato técnico descrito igual). `validate_state.py`
+        passa a exigir, em SDD `implemented` com `source_docs` não vazio,
+        uma linha de evidência identificável como "Fidelidade à origem" —
+        não-retroativo por `created` estritamente posterior a esta versão
+        (comparação `>`, não `>=`: `created` só tem granularidade de dia,
+        e SDD-DTF-0036 foi criada no mesmo dia desta mudança).
+    - version: "2.1.0"
+      date: "2026-08-29"
+      summary: >
+        Primeira etapa da neutralização de fornecedor (SPEC-DTF-0001,
+        ADR-DTF-0001): o framework deixa de depender de prompt colado para
+        ser usado. `AGENTS.md` na raiz do repositório passa a ser o alvo
+        canônico das renderizações — lido nativamente por Codex, Cursor,
+        Gemini CLI, Copilot e Aider — acompanhado de um `QUICKSTART.md` de
+        uma página; ambos são gerados por render_prompts.py, nunca
+        escritos à mão, e o CI barra divergência. PRD e TS saem de
+        `document_types` para a chave nova `legacy_document_types`: somem
+        do caminho oferecido a trabalho novo sem perder validade nem
+        rastreabilidade de id nos projetos já mapeados. Mudança de
+        superfície e de empacotamento, não de regra: fluxo, gates, sizing
+        e ciclo de vida seguem idênticos.
+    - version: "2.0.0"
+      date: "2026-08-29"
+      summary: >
+        BREAKING. Três mudanças de desenho, todas para cortar volume sem
+        perder rastreabilidade. (1) PRD e Tech Spec fundem-se no tipo SPEC:
+        eram dois documentos com o mesmo autor, o mesmo parent e às vezes o
+        mesmo título, revisados juntos e nunca separadamente — nenhuma
+        referência de mercado (GitHub Spec Kit, AWS Kiro, tlc-spec-driven)
+        os separa em arquivos de repositórios diferentes. PRD e TS seguem
+        válidos como tipos legados: projeto já mapeado não migra
+        (lessons_policy.non_retroactive). (2) Nova seção 19 (sizing): a
+        profundidade do fluxo passa a ser função do blast radius da mudança,
+        não fixa — mudança de ≤3 arquivos sem critério de gate vai direto a
+        SDD, e a ausência do artefato É o registro de que a fase foi pulada.
+        Corrige o custo observado de ~620 linhas de documento para
+        configurar ESLint e CI. (3) STRAT deixa de ser tipo obrigatório do
+        funil e vira seção opcional da RFC — em uso real, nenhum STRAT
+        chegou a `approved`. Acompanha o congelamento do núcleo declarado
+        na seção 18: daqui em diante, versão nova é para mudança de
+        desenho, não para reagir a violação de agente.
+    - version: "1.7.0"
+      date: "2026-08-29"
+      summary: >
+        Corrige gap de qualidade (não de ordem): os gates 13/14 garantiam
+        que PRD/TS/SDD existissem antes do código e que o código nascesse
+        em branch — mas nada garantia que o CONTEÚDO desses documentos
+        fosse específico o suficiente para implementação sem ambiguidade,
+        nem que a SDD, ao virar `implemented`, tivesse sido de fato
+        verificada contra evidência (não memória) e não tivesse crescido
+        além do que foi pedido. Templates de PRD/Tech Spec/SDD ganham
+        estrutura granular (requisito↔critério 1:1, contratos com
+        Consumes/Produces e "onde" exato, casos de borda explícitos),
+        marcador `NEEDS CLARIFICATION` para não inventar silenciosamente,
+        autorrevisão obrigatória antes de `in_review`, e a SDD ganha seção
+        de evidência de verificação e checklist de escopo (nada a mais,
+        nada a menos) antes de `implemented`. Novas seções 15
+        (gate_content_quality) e 16 (gate_scope_verification). Inspirado
+        em práticas de github.com/obra/superpowers (self-review contra
+        placeholder, "Iron Law" de evidência antes de afirmar conclusão) —
+        adaptado, não copiado, pois este framework opera em dois
+        repositórios e por documentos versionados, não por sessão única.
+        Nova skill `handover` (par com `pickup`, seção 17) para transferir
+        contexto de quem planejou (PRD/TS/SDD) para quem implementa sem
+        herdar a sessão inteira — pensada para manter o agente
+        implementador abaixo de ~45% de uso de contexto da sessão.
+    - version: "1.6.0"
+      date: "2026-08-25"
+      summary: >
+        Corrige segundo gap do mesmo incidente EVM: mesmo com PRD/TS/SDD
+        no lugar (gate da seção 13 respeitado), a implementação foi
+        commitada direto na branch main do repositório de projeto, sem
+        branch dedicada nem PR — fere o princípio de desenvolvimento
+        isolado que sustenta qualquer pipeline de CI/CD (revisão antes de
+        integrar, checks obrigatórios, histórico limpo por decisão). Nova
+        seção 14 (gate_branch_before_commit) torna obrigatório que toda
+        implementação de código coberta por este framework nasça em
+        branch própria e vá a main via PR, nunca commit direto. Nova
+        capability `enforce_branch_before_commit`.
+    - version: "1.5.0"
+      date: "2026-08-25"
+      summary: >
+        Corrige gap crítico: uma sessão de IA implementou 3 ADRs aprovados
+        do projeto EVM indo direto pro código, sem PRD/Tech Spec/SDD —
+        documentos escritos só depois, retroativamente, quando o dono do
+        projeto percebeu a lacuna. Nova seção 13
+        (gate_implementation_before_code) torna explícito e OBRIGATÓRIO
+        que nenhuma implementação pode começar antes de PRD/TS (central) e
+        SDD (projeto) existirem — um ADR com "Consequências" detalhada não
+        é especificação suficiente. Diferente da auditoria (seção 11, que
+        tolera desvio de terceiros e descobre depois), este gate vale para
+        a própria IA operando sob o framework: pular a ordem é erro a
+        evitar, não desvio a tolerar. Nova capability
+        `enforce_implementation_gate`.
+    - version: "1.4.0"
+      date: "2026-08-24"
+      summary: >
+        Corrige gap: nem onboarding nem auditoria registravam a URL do
+        repositório de código do projeto em lugar nenhum, então rodar uma
+        auditoria dependia de alguém lembrar de informar o link toda vez.
+        Agora todo registry central (docs/{PROJECT_CODE}/registry.yaml)
+        carrega um campo `repository` de nível de projeto com a URL do
+        repositório de código; onboarding passa a gravá-lo na Fase 1, e
+        auditoria passa a lê-lo primeiro em vez de assumir que já foi
+        informado.
+    - version: "1.3.0"
+      date: "2026-08-24"
+      summary: >
+        Guia opcional de paralelização por trilhas de negócio
+        (docs/guias/paralelizacao-trilhas.md): padrão de
+        organização (uma skill por trilha, uma sessão de IA/pessoa por
+        trilha, grafo de dependências) para projetos com módulos
+        independentes que podem ser implementados em paralelo. Não
+        altera o fluxo principal de documentos nem cria tipo novo — é
+        um padrão de execução, não de decisão.
+    - version: "1.0.0"
+      date: "2026-08-15"
+      summary: "Fluxo Strategy->RFC->[gate]->ADR->PRD/TS->SDD, registry, IDs, kit multi-projeto."
+    - version: "1.1.0"
+      date: "2026-08-15"
+      summary: >
+        Modelo multi-repositório explícito (repo central + repo por projeto,
+        SDD vive no repo do projeto); onboarding de projeto já existente
+        (tipo BASE + ADRs reconstruídos); fluxo de incidentes e postmortem
+        (tipos INC/PM, severidade, regra de recorrência).
+    - version: "1.2.0"
+      date: "2026-08-15"
+      summary: >
+        Auditoria de aderência (seção 11): como a adesão de todo o time à
+        convenção de referenciar documentos em commits/PRs não pode ser
+        garantida, o framework passa a oferecer uma auditoria periódica e
+        sob demanda (sem CI, sem bloqueio de merge) que cruza o histórico
+        do repositório do projeto com os registries, classifica commits em
+        coberto/referência quebrada/não documentado, e reaproveita o
+        mecanismo de reconstrução do onboarding para propor ADRs quando o
+        commit não documentado for arquiteturalmente significativo.
+
+##############################################################################
+# 1. TOPOLOGIA DE REPOSITÓRIOS (MODELO MULTI-REPO)
+##############################################################################
+# Este framework assume DOIS tipos de repositório git, nunca um só:
+#
+#   (a) REPOSITÓRIO CENTRAL — um único repositório, guarda:
+#         - _framework/ (este arquivo, templates, prompts, skill, scripts) —
+#           cópia ÚNICA, nunca duplicada por projeto.
+#         - docs/{PROJECT_CODE}/ para TODOS os projetos, mas somente os
+#           tipos "upstream": STRAT, RFC, ADR, SPEC, BASE, INC, PM
+#           (mais PRD e TS em projeto legado sob 1.x).
+#         - É o histórico institucional completo: por que cada decisão foi
+#           tomada, em qualquer projeto, desde sempre.
+#
+#   (b) REPOSITÓRIO DE CADA PROJETO — um repositório de código por projeto
+#       (o lugar onde a IA de implementação efetivamente roda), guarda:
+#         - docs/sdd/ — as SDDs desse projeto NASCEM e VIVEM aqui, não no
+#           repositório central. É o único tipo de documento do framework
+#           que mora no repositório de código.
+#         - docs/sdd/registry.yaml — registry local, só de SDDs, no mesmo
+#           formato do registry central (ver seção 7).
+#
+# Por que a SDD é a exceção: ela é o único tipo de documento pensado para
+# ser lido por uma IA no momento de gerar código, então precisa estar onde
+# o código está. Os demais tipos são artefatos de decisão, não de
+# implementação, e ganham mais valor centralizados (rastreabilidade entre
+# projetos, uma só cópia da regra canônica).
+repository_topology:
+  central_repo:
+    contains: ["_framework/", "docs/{PROJECT_CODE}/ (STRAT, RFC, ADR, SPEC, BASE, INC, PM; PRD e TS em projeto legado)"]
+    registry: "docs/{PROJECT_CODE}/registry.yaml (um por projeto, não um arquivo único gigante)"
+    role: "Fonte da verdade de todas as decisões, de todos os projetos, para sempre."
+  project_repo:
+    contains: ["docs/sdd/ (SDDs deste projeto)"]
+    registry: "docs/sdd/registry.yaml (local, mesmo schema, escopo só SDD)"
+    role: "Onde a IA de implementação lê a SDD e onde o rastreio de código (commits/PRs) acontece."
+  cross_repo_reference:
+    description: >
+      Como o repositório de projeto não tem os arquivos do repositório
+      central presentes localmente, toda referência de uma SDD a um
+      documento de origem (SPEC, ADR) DEVE incluir não só o id mas
+      também a URL completa do arquivo no repositório central — sem isso,
+      a rastreabilidade quebra ao atravessar repositórios. Ver
+      frontmatter_schema.type_specific_fields.SDD.source_docs.
+    format: "{ id: 'SPEC-CHECKOUT-0002', url: 'https://github.com/org/framework-central/blob/main/docs/CHECKOUT/03-spec/SPEC-CHECKOUT-0002.md' }"
+  project_repo_url:
+    description: >
+      A URL do repositório de código de cada projeto (o project_repo desta
+      seção) fica registrada no campo `repository`, no topo do
+      docs/{PROJECT_CODE}/registry.yaml do repositório central — não em
+      nenhum documento individual. É a única fonte que a auditoria (seção
+      11) consulta para saber qual repositório ler; nunca deve ser
+      adivinhada. Ver registry.central_registry.repository_field.
+
+##############################################################################
+# 2. TIPOS DE DOCUMENTO
+##############################################################################
+document_types:
+  STRAT:
+    name: "Strategy Doc (opcional)"
+    purpose: >
+      Registra uma ideia/direção estratégica antes de virar trabalho
+      concreto. Desde a v2.0.0 é OPCIONAL e não faz parte do caminho
+      obrigatório: use uma seção "Contexto estratégico" dentro da própria
+      RFC, e crie um STRAT separado só quando a direção precisar existir
+      sem nenhuma RFC associada (ex.: direção anual, tese de produto). Em
+      uso real, nenhum STRAT criado chegou a `approved` — o conteúdo
+      pertencia à RFC que veio depois.
+    optional: true
+    repo: central
+    folder: "docs/{PROJECT_CODE}/00-strategy"
+    template: "templates/strategy.template.md"
+    can_originate: ["RFC"]
+
+  RFC:
+    name: "Request for Comments"
+    purpose: >
+      Propõe e abre discussão técnica/produto antes de decisões relevantes:
+      mudança transversal, impacto em múltiplos times, custo alto, risco
+      técnico, nova tecnologia ou alteração de contrato entre serviços.
+    repo: central
+    folder: "docs/{PROJECT_CODE}/01-rfc"
+    template: "templates/rfc.template.md"
+    required_sections:
+      - contexto
+      - problema
+      - objetivos
+      - nao_objetivos
+      - alternativas
+      - proposta
+      - impactos
+      - riscos
+      - plano
+      - metricas
+    parent_types: ["STRAT", "PM"]     # PM = pode nascer de um action item de postmortem
+    can_originate: ["ADR", "SPEC"]   # depende do gate, ver decision_gates
+
+  ADR:
+    name: "Architectural Decision Record"
+    purpose: >
+      Registro atômico e imutável de UMA decisão de arquitetura: contexto,
+      decisão tomada e consequências. Evita rediscutir o mesmo problema e
+      explica por que alternativas foram rejeitadas.
+    format_reference: "Modelo enxuto de Michael Nygard (https://adr.github.io/adr-templates/)"
+    repo: central
+    folder: "docs/{PROJECT_CODE}/02-adr"
+    template: "templates/adr.template.md"
+    immutable_after_status: ["approved"]   # após aprovado, só pode ser superseded, nunca editado
+    parent_types: ["RFC", "BASE"]   # BASE = origem quando o ADR é reconstruído no onboarding
+    can_originate: ["SPEC"]
+
+  SPEC:
+    name: "Specification (requisito + desenho)"
+    purpose: >
+      Documento único que substitui o par PRD + Tech Spec: a Parte 1
+      registra o requisito (o QUÊ, com RF-ID e critério de aceite próprio)
+      e a Parte 2 registra o desenho executável (o COMO e o ONDE, com
+      contratos assinados e arquivo/módulo exato). Fonte da SDD.
+    repo: central
+    folder: "docs/{PROJECT_CODE}/03-spec"
+    template: "templates/spec.template.md"
+    parent_types: ["RFC", "ADR"]   # ambos opcionais, dependem de sizing e do gate
+    can_originate: ["SDD"]
+    replaces: ["PRD", "TS"]
+
+  SDD:
+    name: "Spec Driven Design"
+    purpose: >
+      Documento compilado a partir da SPEC (+ ADR quando existir),
+      escrito para ser consumido DIRETAMENTE por ferramentas de IA (Claude
+      Code, Cursor, Copilot, agentes de implementação etc.) como input
+      primário de geração/implementação de código. É o elo entre "decisão
+      documentada" e "IA executando o trabalho".
+    repo: project      # única exceção: vive no repositório do projeto, não no central
+    folder: "docs/sdd"
+    template: "templates/sdd.template.md"
+    parent_types: ["SPEC", "PRD", "TS", "ADR"]   # todos vivem no repo central — ver cross_repo_reference
+    ai_input: true   # marca este tipo como artefato de entrada para ferramentas de IA
+
+  BASE:
+    name: "Baseline (retrato do estado atual)"
+    purpose: >
+      Usado SOMENTE no onboarding de um projeto que já existia antes deste
+      framework. Não é uma decisão — é uma fotografia do que já existe hoje
+      (stack, estrutura, integrações, dívidas conhecidas), levantada por
+      uma IA lendo o repositório de código. Serve de âncora/contexto para
+      os ADRs reconstruídos que vierem a partir dela.
+    repo: central
+    folder: "docs/{PROJECT_CODE}/06-baseline"
+    template: "templates/base.template.md"
+    can_originate: ["ADR"]   # ADRs reconstruídos, ver seção 4 (onboarding)
+    one_time: true   # normalmente um único BASE por projeto, criado no dia do onboarding
+
+  INC:
+    name: "Incident Record"
+    purpose: >
+      Registro de um incidente em produção, do início até o fechamento.
+      Não é um documento de decisão a ser aprovado — é um evento a ser
+      acompanhado, por isso tem ciclo de vida próprio (ver seção 5).
+    repo: central
+    folder: "docs/{PROJECT_CODE}/07-incidents"
+    template: "templates/inc.template.md"
+    can_originate: ["PM"]
+    lifecycle: incident_lifecycle   # não usa status_lifecycle padrão
+
+  PM:
+    name: "Postmortem"
+    purpose: >
+      Documento analítico pós-incidente: causa raiz, linha do tempo,
+      fatores contribuintes e action items. Usa o ciclo de vida padrão
+      (é um documento de decisão/aprendizado como os demais). Pode
+      originar novas RFCs ou SPECs a partir dos action items.
+    repo: central
+    folder: "docs/{PROJECT_CODE}/08-postmortems"
+    template: "templates/pm.template.md"
+    parent_types: ["INC"]
+    can_originate: ["RFC", "SPEC"]   # ver seção 5 (triagem de action items)
+
+##############################################################################
+# 3. FLUXO PRINCIPAL (TO-BE) E GATE DE DECISÃO
+##############################################################################
+# Fluxo textual:
+#   Strategy Doc -> RFC -> [GATE: exige ADR?]
+#       -> sim: ADR -> SPEC -> SDD (no repo do projeto)
+#       -> não: SPEC -> SDD (no repo do projeto)
+#   SDD -> consumido por ferramentas de IA na implementação, no repo do projeto
+#   Loop: decisões com impacto estratégico realimentam o Strategy Doc
+#
+# Este foi o GAP corrigido na v1.0: antes, TODA RFC aprovada exigia ADR
+# antes da SPEC. Agora existe um gate explícito.
+
+
+##############################################################################
+# 3b. TIPOS LEGADOS — não fazem parte do fluxo, mas continuam válidos
+#
+# PRD e TS saíram de `document_types` na v2.1.0: não são mais caminho
+# possível para trabalho novo, e nenhuma renderização deve oferecê-los.
+# Continuam declarados aqui porque projeto mapeado sob 1.x segue operando
+# sob 1.x (lessons_policy.non_retroactive) e porque os validadores
+# precisam reconhecer ids `PRD-*` e `TS-*` já emitidos — ver
+# framework_lib._derive_constants, que monta DOC_TYPES pela união das duas
+# chaves.
+##############################################################################
+
+legacy_document_types:
+  PRD:
+    name: "Product Requirements Document (legado)"
+    purpose: "Detalha o requisito de produto a ser construído."
+    deprecated_since: "2.0.0"
+    deprecation_note: >
+      Fundido em SPEC na v2.0.0. Documentos PRD existentes seguem válidos e
+      não são migrados — projeto mapeado sob 1.x continua operando sob 1.x
+      (lessons_policy.non_retroactive). Trabalho novo usa SPEC.
+    repo: central
+    folder: "docs/{PROJECT_CODE}/03-prd"
+    template: "templates/prd.template.md"
+    parent_types: ["RFC", "ADR"]   # ADR é opcional, depende do gate
+    can_originate: ["SDD"]
+
+  TS:
+    name: "Tech Spec (legado)"
+    deprecated_since: "2.0.0"
+    deprecation_note: >
+      Fundido em SPEC na v2.0.0. Mesma regra de não-retroatividade do PRD.
+    purpose: >
+      Transforma uma decisão em desenho executável: detalha implementação,
+      explicita contratos técnicos, alinha times consumidores, reduz
+      ambiguidade de execução, antecipa riscos operacionais e conecta
+      arquitetura, código e rollout. É fonte final para SDD's.
+    repo: central
+    folder: "docs/{PROJECT_CODE}/04-tech-spec"
+    template: "templates/tech-spec.template.md"
+    parent_types: ["RFC", "ADR"]   # ADR é opcional, depende do gate
+    can_originate: ["SDD"]
+
+
+
+##############################################################################
+# 3c. ARTEFATOS OPERACIONAIS — arquivos que o framework manda criar e que
+#     NÃO são documentos do fluxo
+#
+# Vivem nas mesmas pastas dos documentos, mas não têm front-matter, id nem
+# entrada no registry. Os validadores precisam saber disso: sem esta lista,
+# o framework reprova os arquivos que ele mesmo exige (descoberto ao
+# registrar a primeira lição do projeto DTF, ver SPEC-DTF-0005).
+##############################################################################
+
+operational_artifacts:
+  LESSONS.md:
+    purpose: "Lições locais de execução, acumuladas. O histórico é o valor."
+    declared_in: "lessons_policy.artifact"
+  HANDOFF.md:
+    purpose: "Passagem de contexto entre sessões. Sobrescreve no lugar, é descartável."
+    declared_in: "handover_protocol"
+  validation.md:
+    purpose: "Veredito da verificação independente de uma SDD, ao lado dela. Complementa, nunca substitui, a tabela 'Evidência de verificação' dentro da SDD. Sem front-matter, mesmo formato de artefato descartável que HANDOFF.md e LESSONS.md."
+    declared_in: "capabilities.verify_sdd_independently"
+  validation-*.md:
+    purpose: "Relatório de verificação independente por SDD (ex.: validation-EVM-0013.md), para projeto que guarda um relatório por SDD em vez de sobrescrever validation.md. Mesmo formato e mesmo papel de validation.md."
+    declared_in: "capabilities.verify_sdd_independently"
+
+decision_gates:
+  rfc_to_adr:
+    description: >
+      Após uma RFC ser aprovada (status = approved), avalia-se se ela exige
+      um ADR antes de seguir para a SPEC, ou se pode seguir direto.
+    trigger: "RFC.status == approved"
+    rule: "requires_adr = true SE qualquer critério abaixo for verdadeiro"
+    criteria:
+      - id: novo_padrao_arquitetural
+        description: "Introduz ou altera um padrão arquitetural (novo componente estrutural, novo serviço, mudança de topologia)."
+      - id: alto_custo_reversao
+        description: "Decisão de alto custo ou difícil reversão (rollback caro, lento ou impossível)."
+      - id: trade_off_tecnico_relevante
+        description: "Existe mais de uma alternativa técnica viável cujos prós/contras precisam ficar registrados para não serem rediscutidos."
+      - id: impacto_cross_team
+        description: "Mais de um time/domínio é diretamente afetado pela decisão."
+      - id: troca_tecnologia_vendor
+        description: "Introduz ou troca tecnologia, vendor ou dependência externa relevante (banco de dados, provedor cloud, linguagem, lib crítica)."
+    on_true:
+      next_step: "Criar ADR"
+      next_types: ["ADR"]
+      rfc_field_update: { requires_adr: true }
+    on_false:
+      next_step: "Seguir direto para a SPEC, sem ADR"
+      next_types: ["SPEC"]
+      rfc_field_update: { requires_adr: false }
+    on_rejected:
+      description: "Se a RFC for rejeitada, o fluxo encerra: status = rejected -> archived. Nenhum documento downstream é criado."
+      next_types: []
+
+  spec_to_sdd:
+    description: >
+      A SPEC (e o ADR, se existir) alimenta a SDD, que compila tudo em um
+      único artefato pronto para ser usado como input de IA. A SDD é criada
+      no repositório do PROJETO, não no central. Em projeto legado ainda
+      sob 1.x, o par PRD + Tech Spec ocupa o lugar da SPEC — mesma regra.
+    trigger: "SPEC.status == approved (ou, em projeto legado, PRD.status == approved AND TS.status == approved)"
+    next_step: "Compilar SDD a partir da SPEC (+ ADR se houver) no repositório do projeto"
+    next_types: ["SDD"]
+    note: >
+      A SDD NÃO deve ser escrita do zero: seu conteúdo é derivado/consolidado
+      dos documentos de origem (source_docs), garantindo rastreabilidade
+      mesmo atravessando repositórios (ver repository_topology.cross_repo_reference).
+
+  strategic_feedback_loop:
+    description: >
+      Quando uma ADR (ou o resultado do gate) revela impacto estratégico
+      (novo direcionamento, mudança de prioridade, novo risco de negócio),
+      isso deve realimentar um Strategy Doc novo ou existente.
+    trigger: "ADR criado com campo strategic_impact = true"
+    next_step: "Atualizar ou criar Strategy Doc, referenciando o ADR de origem"
+    next_types: ["STRAT"]
+
+##############################################################################
+# 4. ONBOARDING DE PROJETO JÁ EXISTENTE
+##############################################################################
+# Aplica-se quando um projeto que já tem código em produção, sem nenhum
+# documento deste framework, precisa "entrar" no fluxo. É um procedimento
+# de DUAS FASES, executado uma única vez por projeto.
+onboarding:
+  applies_when: "Projeto com código em produção e nenhum histórico de STRAT/RFC/ADR/PRD/TS neste framework."
+  phase_1_baseline:
+    description: >
+      Levantamento único do estado atual, feito por uma IA lendo o
+      repositório de código existente. Não inventa histórico que não
+      existe — descreve o que encontra e infere decisões passadas a
+      partir do código.
+    steps:
+      - step: 1
+        action: "IA lê o repositório de código do projeto (stack, estrutura, integrações, dívidas técnicas visíveis)."
+      - step: 2
+        action: "IA cria um único documento BASE-{PROJECT_CODE}-0001 no repositório central, resumindo o estado atual."
+      - step: 2.1
+        action: >
+          IA grava (ou confirma, se já existir) a URL do repositório de
+          código do projeto no campo `repository` do
+          docs/{PROJECT_CODE}/registry.yaml do repositório central. Se a
+          IA não souber a URL, pergunta ao usuário antes de seguir — nunca
+          adivinha. Este campo é o que a auditoria (seção 11) lerá no
+          futuro para saber qual repositório inspecionar.
+      - step: 3
+        action: >
+          Para cada decisão de arquitetura que a IA consegue inferir do
+          código (ex.: escolha de banco de dados, padrão de autenticação,
+          modelo de deploy), ela cria um ADR normal, mas com
+          provenance=reconstructed e status inicial=in_review (nunca
+          approved direto — é inferência, precisa confirmação humana).
+        constraint: "parent_rfc do ADR reconstruído aponta para o BASE, não para uma RFC (não existe RFC retroativa)."
+      - step: 4
+        action: >
+          Uma pessoa do time revisa cada ADR reconstruído: confirma se o
+          raciocínio da IA está certo ou corrige com o motivo real. Só
+          depois dessa revisão o ADR passa para status=approved.
+      - step: 5
+        action: >
+          Registrar todos os documentos da Fase 1 (BASE + ADRs
+          reconstruídos aprovados) no docs/{PROJECT_CODE}/registry.yaml do
+          repositório central, com tags=[onboarding] em cada entrada.
+    what_not_to_do: >
+      Não reconstruir SPEC do que já foi construído no
+      passado — o código já é a especificação do que existe; o valor de
+      reconstruir está apenas no "porquê" (ADRs), não no "como" (SPEC).
+  phase_2_cutover:
+    description: >
+      A partir daqui, o projeto segue o fluxo principal normalmente, como
+      se fosse um projeto novo — não há mais diferença de tratamento.
+    steps:
+      - step: 1
+        action: "A próxima demanda real do projeto vira RFC-{PROJECT_CODE}-0001 (numeração começa do zero para RFC, SPEC e SDD — só BASE e os ADRs reconstruídos carregam a marca de onboarding)."
+      - step: 2
+        action: "Segue normalmente: gate de decisão (seção 3), SPEC, e a primeira SDD nasce no repositório do projeto."
+
+##############################################################################
+# 5. INCIDENTES E POSTMORTEM (FLUXO APARTADO)
+##############################################################################
+# Incidentes não seguem o ciclo de vida padrão (draft/review/approved) —
+# são eventos operacionais, não decisões a aprovar. O postmortem, sim, usa
+# o ciclo de vida padrão, porque é um documento analítico/decisório.
+incident_lifecycle:
+  states: ["open", "mitigated", "resolved", "closed"]
+  description_by_state:
+    open: "Incidente detectado e em andamento."
+    mitigated: "Impacto contido/reduzido, mas causa raiz ainda não resolvida definitivamente."
+    resolved: "Causa raiz tratada, sistema normalizado."
+    closed: "Incidente encerrado; se exigia postmortem, o postmortem já existe (ao menos em draft)."
+  allowed_transitions:
+    open: ["mitigated", "resolved"]
+    mitigated: ["resolved"]
+    resolved: ["closed"]
+    closed: []
+
+severity_scale:
+  description: "Critérios objetivos para classificar um incidente, na mesma lógica do gate RFC->ADR: reduzir julgamento subjetivo."
+  levels:
+    - id: SEV1
+      name: "Crítico"
+      criteria: "Indisponibilidade total ou de função crítica para todos/maioria dos usuários; perda de dados; incidente de segurança confirmado."
+      postmortem: "obrigatório_completo"
+    - id: SEV2
+      name: "Alto"
+      criteria: "Degradação relevante de uma função importante para parte significativa dos usuários; sem workaround viável."
+      postmortem: "obrigatório_completo"
+    - id: SEV3
+      name: "Moderado"
+      criteria: "Impacto limitado a um subconjunto pequeno de usuários ou a uma função não crítica; existe workaround razoável."
+      postmortem: "obrigatório_leve"
+    - id: SEV4
+      name: "Baixo"
+      criteria: "Impacto mínimo/cosmético, sem efeito perceptível para o usuário final, ou corrigido antes de qualquer impacto externo."
+      postmortem: "opcional"
+
+postmortem_policy:
+  by_severity:
+    obrigatório_completo: "Postmortem completo obrigatório: linha do tempo, causa raiz, fatores contribuintes, action items com dono e prazo."
+    obrigatório_leve: "Postmortem obrigatório, mas em formato leve: resumo curto do que aconteceu, causa e ação, sem necessidade de reunião formal."
+    opcional: "Postmortem só é criado se o time identificar aprendizado relevante."
+  recurrence_rule:
+    description: >
+      Independente da severidade individual, se a mesma causa raiz se
+      repetir dentro de uma janela de 90 dias, o postmortem torna-se
+      obrigatório (ao menos leve) — um problema SEV4 recorrente é, na
+      prática, um problema estrutural.
+    trigger: "2ª ocorrência (ou mais) da mesma causa raiz em <= 90 dias"
+    effect: "postmortem passa a ser obrigatório_leve no mínimo, mesmo se o incidente individual for SEV4"
+
+action_item_triage:
+  description: >
+    Cada action item de um postmortem é triado para dentro do fluxo
+    principal, reaproveitando o mesmo critério de significância do gate
+    RFC->ADR em vez de criar uma régua nova.
+  small_direct_fix:
+    description: "Ajuste pontual, bem entendido, sem nenhum critério do gate rfc_to_adr aplicável."
+    next_types: ["SPEC"]
+    note: "Não passa por RFC — entra pelo sizing como small ou medium."
+  structural_change:
+    description: "Implica mudança que atenderia a pelo menos 1 critério de decision_gates.rfc_to_adr.criteria."
+    next_types: ["RFC"]
+    note: "Vira uma RFC normal (relates_to aponta para o PM de origem) e segue o gate normalmente a partir daí."
+
+##############################################################################
+# 6. CICLO DE VIDA DE STATUS PADRÃO (STRAT, RFC, ADR, PRD, TS, SDD, BASE, PM)
+##############################################################################
+status_lifecycle:
+  states: ["draft", "in_review", "approved", "rejected", "implemented", "superseded", "archived"]
+  description_by_state:
+    draft: "Em elaboração, ainda não submetido."
+    in_review: "Submetido para discussão/aprovação. Para ADR reconstruído, é o estado obrigatório até a revisão humana confirmar."
+    approved: "Aprovado/aceito. Para ADR, este estado torna o documento imutável."
+    rejected: "Não seguirá adiante. Terminal (a menos que uma nova versão seja aberta como novo doc)."
+    implemented: "O que o documento descreve já foi entregue/construído."
+    superseded: "Substituído por outro documento mais recente (aponta para superseded_by)."
+    archived: "Estado terminal/histórico. Documento não está mais ativo."
+  allowed_transitions:
+    draft: ["in_review", "archived"]
+    in_review: ["approved", "rejected", "draft"]
+    approved: ["implemented", "superseded", "archived"]
+    rejected: ["archived"]
+    implemented: ["superseded", "archived"]
+    superseded: ["archived"]
+    archived: []
+  notes: >
+    INC usa incident_lifecycle (seção 5), não este ciclo — é a única
+    exceção. Todos os outros 8 tipos usam este mesmo ciclo, o que mantém
+    o registry consistente e as consultas de rastreabilidade previsíveis.
+
+##############################################################################
+# 7. ESQUEMA DE ID
+##############################################################################
+id_scheme:
+  pattern: "{TYPE}-{PROJECT_CODE}-{SEQ}"
+  seq_format: "4 dígitos, zero-padded, sequencial por TYPE dentro do projeto (0001, 0002, ...)"
+  example: "RFC-CHECKOUT-0007"
+  project_code_rule: "Código curto, maiúsculo, sem espaços, definido uma vez por projeto."
+  uniqueness: "id é único dentro do registry do tipo/projeto. Nunca reutilizar um id, mesmo de documento archived."
+  onboarding_note: "BASE e ADRs reconstruídos usam a mesma sequência normal do tipo — não têm prefixo especial, só o campo provenance os distingue."
+
+##############################################################################
+# 8. METADADOS (FRONT-MATTER) — TODO documento começa com este bloco YAML
+##############################################################################
+frontmatter_schema:
+  common_fields:
+    id: "string — obrigatório, segue id_scheme"
+    type: "enum[STRAT, RFC, ADR, SPEC, PRD, TS, SDD, BASE, INC, PM] — obrigatório"
+    title: "string — obrigatório"
+    status: "enum, ver status_lifecycle.states (ou incident_lifecycle.states se type=INC) — obrigatório"
+    project: "string — PROJECT_CODE — obrigatório"
+    owner: "string — pessoa ou time responsável — obrigatório"
+    created: "date (YYYY-MM-DD) — obrigatório"
+    updated: "date (YYYY-MM-DD) — obrigatório, atualizar a cada mudança"
+    relates_to: "lista de ids — outros documentos diretamente conectados (pais/filhos)"
+    supersedes: "id ou null — não se aplica a INC (incident_lifecycle não tem estado `superseded`); o template de INC omite este campo"
+    superseded_by: "id ou null — não se aplica a INC, mesma razão de `supersedes`"
+    tags: "lista de strings — livre (ex.: [onboarding] para documentos da Fase 1)"
+  type_specific_fields:
+    RFC:
+      requires_adr: "boolean ou null (null = gate ainda não avaliado)"
+      decision_gate_criteria_met: "lista de ids de decision_gates.rfc_to_adr.criteria que se aplicaram"
+      parent_strategy: "id do STRAT de origem, ou null"
+      parent_postmortem: "id do PM de origem, ou null (quando a RFC nasce de um action item)"
+    ADR:
+      parent_rfc: "id da RFC que originou este ADR, ou id do BASE se for reconstruído"
+      strategic_impact: "boolean — se true, aciona strategic_feedback_loop"
+      decision: "resumo de 1 linha da decisão tomada"
+      provenance: "authored | reconstructed — reconstructed = inferido pela IA a partir de código existente no onboarding"
+    PRD:
+      parent_rfc: "id da RFC de origem"
+      parent_adr: "id do ADR de origem, ou null se o gate dispensou ADR"
+    TS:
+      parent_rfc: "id da RFC de origem"
+      parent_adr: "id do ADR de origem, ou null se o gate dispensou ADR"
+    SPEC:
+      parent_rfc: "id da RFC de origem, ou null se o sizing dispensou RFC"
+      parent_adr: "id do ADR de origem, ou null se o gate dispensou ADR"
+      sizing: "small | medium | large | complex — ver sizing (seção 19)"
+    SDD:
+      source_docs: >
+        lista de objetos { id, url } — SPEC(s) e ADR(s) que originaram
+        esta SDD em projeto sob 2.0.0+ (PRD(s)/TS(s) em projeto ainda
+        mapeado sob 1.x). url é obrigatório porque esses documentos
+        vivem no repositório central, não no repositório do projeto onde
+        a SDD está (ver repository_topology.cross_repo_reference).
+      consumption_instructions: "texto curto — como uma IA deve usar este documento antes de implementar"
+    BASE:
+      scan_date: "data em que o levantamento foi feito"
+      known_gaps: "lista curta — o que a IA não conseguiu inferir com confiança a partir do código"
+    INC:
+      severity: "SEV1 | SEV2 | SEV3 | SEV4"
+      detected_at: "timestamp de detecção"
+      impact_summary: "1-2 frases do impacto real"
+      root_cause_key: "identificador curto e estável da causa raiz, usado para detectar recorrência (postmortem_policy.recurrence_rule)"
+    PM:
+      source_incident: "id do INC de origem"
+      severity_inherited: "severidade herdada do INC (para aplicar postmortem_policy)"
+      action_items: "lista de { description, triage: small_direct_fix|structural_change, generated_doc: id ou null }"
+
+##############################################################################
+# 9. REGISTRY (RASTREABILIDADE)
+##############################################################################
+registry:
+  central_registry:
+    path: "docs/{PROJECT_CODE}/registry.yaml"
+    human_readable_view: "docs/{PROJECT_CODE}/registry.md"   # gerado, nunca editado à mão
+    scope: "STRAT, RFC, ADR, PRD, TS, BASE, INC, PM deste projeto"
+    repository_field:
+      field: "repository"
+      level: "topo do arquivo (nível de projeto, não por documento) — ao lado de `project` e `framework_version`"
+      description: >
+        URL do repositório de código do projeto (o project_repo de
+        repository_topology). É o dado que a auditoria (seção 11) precisa
+        para saber qual repositório ler; sem ele, a auditoria não sabe
+        onde procurar commits/PRs.
+      populated_when: >
+        Preenchido no onboarding (phase_1_baseline, step 2.1) ou, para
+        projeto novo, na criação do registry.yaml (ver multi_project).
+        Nunca deve ser inferido/adivinhado pela IA — se ausente, pergunta
+        ao usuário. Desde a v2.1.0 a ausência tem dois motivos diferentes,
+        distinguidos pelo campo `repository_status`: o repositório de
+        código ainda não existe (modo greenfield, estado legítimo e
+        permanente enquanto durar), ou existe e ninguém preencheu (lacuna
+        a corrigir). Sem `repository_status` declarado, a ausência é
+        tratada como greenfield ASSUMIDO — e o aviso diz que foi
+        assumido, não declarado.
+      states:
+        active: >
+          O repositório de código existe e sua URL está em `repository`.
+          É o estado normal.
+        none_yet: >
+          Modo greenfield: o projeto ainda não tem repositório de código.
+          O fluxo de decisão (STRAT, RFC, ADR, SPEC) roda inteiro no
+          repositório central. SDD não pode ser criada enquanto durar,
+          porque SDD vive em docs/sdd/ do repositório de projeto — e isso
+          não dispensa gate_implementation_before_code: sem repositório
+          não há código a escrever.
+      leaving_greenfield: >
+        Dois passos, um único ato: (1) preencher `repository` com a URL e
+        `repository_status: active` no registry central; (2) criar
+        docs/sdd/registry.yaml vazio no repositório novo.
+  project_registry:
+    path: "docs/sdd/registry.yaml"
+    human_readable_view: "docs/sdd/registry.md"
+    scope: "Só SDD deste projeto, no repositório de código do projeto"
+  entry_fields: ["id", "type", "title", "status", "owner", "created", "updated", "relates_to", "path"]
+  update_rule: >
+    Toda vez que um documento é criado ou tem status/relates_to alterado,
+    o registry correspondente (central ou de projeto, conforme o tipo)
+    DEVE ser atualizado no mesmo momento. O front-matter do documento e a
+    entrada no registry nunca podem divergir.
+  traceability_query: >
+    Dado um id, a cadeia completa (ancestrais e descendentes) é obtida
+    percorrendo relates_to/parent_*/source_docs recursivamente. Quando a
+    cadeia atravessa do repositório de projeto para o central (via SDD),
+    a resolução usa a url gravada em source_docs em vez de leitura local.
+
+##############################################################################
+# 10. REUSO MULTI-PROJETO
+##############################################################################
+multi_project:
+  approach: "kit de templates versionado + repositório central único"
+  instructions: >
+    _framework/ existe em UMA cópia só, dentro do repositório central.
+    Para adicionar um projeto novo, em duas etapas — a segunda é
+    CONDICIONAL, e não ter repositório de código não impede começar.
+    Etapa 1 (sempre): criar docs/{PROJECT_CODE}/ no repositório central
+    com as subpastas de document_types (exceto SDD) e um registry.yaml.
+    Se o repositório de código já existir, preencher `repository` com a
+    URL e `repository_status: active` (perguntar ao usuário se não for
+    informada — nunca adivinhar, ver
+    registry.central_registry.repository_field); se ainda não existir,
+    declarar `repository_status: none_yet` e seguir — o fluxo STRAT, RFC,
+    ADR e SPEC roda inteiro sem ele.
+    Etapa 2 (condicional, quando o repositório de código existir): criar
+    docs/sdd/ com seu próprio registry.yaml vazio, e atualizar o registry
+    central conforme registry.central_registry.repository_field.leaving_greenfield.
+    As regras de negócio (gate, lifecycle, schema, severidade) NÃO mudam
+    entre projetos — apenas o PROJECT_CODE e o conteúdo dos documentos.
+  versioning: >
+    Mudanças no framework são feitas uma única vez em
+    _framework/rules/workflow-rules.yaml (fonte canônica) e versionadas em
+    framework.version (semver) — como só existe uma cópia, não há
+    propagação manual entre projetos.
+
+##############################################################################
+# 11. AUDITORIA DE ADERÊNCIA (COMMITS/PRS x REGISTRY)
+##############################################################################
+# O framework NUNCA assume que todo commit/PR nasce de um documento
+# aprovado — na prática sempre existem commits e PRs avulsos (hotfix fora
+# de incidente, ajuste de dependência, refactor pontual) e correções feitas
+# durante um INC, onde o código muda antes de qualquer documento existir.
+# Como a adesão de todo o time à convenção de referência NÃO pode ser
+# garantida, este framework não tenta impor isso com automação/CI — em vez
+# disso, oferece uma auditoria periódica, sob demanda, que assume que vai
+# haver desvio e o transforma em achado revisável, reaproveitando o MESMO
+# mecanismo de reconstrução do onboarding (seção 4) em vez de criar um
+# processo novo.
+audit:
+  precondition: >
+    A auditoria lê o campo `repository` do registry central para saber
+    qual repositório varrer. Se ele estiver ausente, a IA DECLARA que o
+    projeto não tem repositório de código registrado e PARA, perguntando
+    ao usuário — nunca infere, adivinha ou deduz a URL a partir do nome do
+    projeto. Quando `repository_status: none_yet`, não há o que auditar:
+    o projeto está em modo greenfield e ainda não produziu commit algum.
+  purpose: >
+    Detectar, depois do fato, quais commits/PRs do repositório de um
+    projeto não têm nenhum documento do framework por trás — sem travar
+    merge, sem exigir disciplina perfeita de commit.
+  trigger: "Sob demanda, quando alguém decide rodar — não é um gate de CI nem bloqueia PR. Cadência sugerida (não obrigatória): a cada ciclo de RFC ou periodicamente (ex.: mensal)."
+  commit_reference_convention:
+    description: >
+      Convenção recomendada, não obrigatória: mencionar o id do documento
+      relacionado na mensagem de commit ou descrição da PR (ex.: "Refs:
+      SDD-{PROJECT}-0001" ou "Refs: INC-{PROJECT}-0002"). A auditoria
+      funciona mesmo que ninguém siga a convenção — ela só facilita achar
+      o vínculo quando alguém segue.
+    enforcement: "nenhuma — não há gate de CI; a auditoria é a rede de segurança para quando a convenção não é seguida."
+  procedure:
+    - step: 1
+      action: >
+        Ler o campo `repository` do docs/{PROJECT_CODE}/registry.yaml do
+        repositório central para saber qual repositório de código
+        inspecionar. Se o campo estiver ausente ou vazio, perguntar a URL
+        ao usuário e gravá-la nesse campo antes de continuar — nunca
+        assumir ou adivinhar o repositório.
+    - step: 2
+      action: "Ler o histórico de commits/PRs do repositório do projeto desde a última auditoria (ou desde o início, na primeira vez)."
+    - step: 3
+      action: "Extrair de cada mensagem qualquer id no formato de id_scheme (seção 7) e cruzar com os ids conhecidos nos registries relevantes (central do projeto + docs/sdd/registry.yaml do próprio repositório)."
+    - step: 4
+      action: "Classificar cada commit/PR em: coberto (referencia ao menos um id existente), referência quebrada (cita um id que não existe em nenhum registry — provável erro de digitação) ou não documentado (nenhum id encontrado na mensagem)."
+    - step: 5
+      action: >
+        Para cada commit/PR não documentado, aplicar os mesmos 5 critérios
+        de decision_gates.rfc_to_adr: se algum critério se aplica
+        (mudança arquitetural, alto custo de reversão, trade-off técnico
+        relevante, impacto cross-team, troca de tecnologia/vendor), propor
+        um ADR reconstruído — mesmas regras do onboarding
+        (provenance=reconstructed, status=in_review, parent_rfc não se
+        aplica; use parent_strategy ou deixe em branco com a justificativa
+        no corpo), referenciando o(s) commit(s)/PR(s) de origem. Se nenhum
+        critério se aplica, não gera nenhum documento — só entra no
+        relatório como "sem documento, sem necessidade aparente".
+    - step: 6
+      action: "Apresentar o relatório (cobertos / referência quebrada / não documentados / ADRs reconstruídos propostos) para revisão humana — igual ao onboarding, nenhum ADR reconstruído é aprovado sem confirmação de uma pessoa do time."
+    - step: 7
+      action: "Documentos aprovados a partir da auditoria ganham tags=[audit] no registry (em vez de tags=[onboarding], para distinguir descoberta contínua de bootstrap inicial)."
+  output: "Relatório de auditoria (texto ou arquivo) — não é um novo tipo de documento formal, não bloqueia nada, não precisa de aprovação para existir; só os ADRs reconstruídos que ele eventualmente propõe seguem o ciclo de aprovação normal."
+  non_goals:
+    - "Não bloquear commit, PR ou merge."
+    - "Não exigir que todo commit tenha referência — a auditoria mede e reporta, não força adesão."
+    - "Não reconstruir SPEC de commits passados, pela mesma razão do onboarding (o código já é a especificação do 'como')."
+
+##############################################################################
+# 12. CAPACIDADES QUE QUALQUER FERRAMENTA DE IA (CLAUDE, CURSOR, COPILOT,
+#     CHATGPT, GEMINI) DEVE OFERECER AO EXECUTAR ESTE FRAMEWORK
+##############################################################################
+capabilities:
+  - id: create_document
+    description: "Criar um novo documento de um tipo válido, a partir do template correto, no repositório correto (central ou de projeto), atribuindo id novo (sequencial), preenchendo front-matter e adicionando entrada no registry correspondente."
+  - id: evaluate_rfc_gate
+    description: "Aplicar decision_gates.rfc_to_adr a uma RFC aprovada: checar os critérios, decidir requires_adr, atualizar o front-matter da RFC e o registry, e indicar o próximo passo correto (ADR, ou direto SPEC)."
+  - id: update_status
+    description: "Mover um documento para um novo status respeitando status_lifecycle.allowed_transitions (ou incident_lifecycle se for INC), atualizando front-matter e registry juntos."
+  - id: compile_sdd
+    description: "Compilar uma SDD no repositório do projeto a partir da SPEC (+ ADR se existir) do repositório central, populando source_docs com id+url e preparando o texto para consumo por ferramentas de IA de implementação."
+  - id: trace
+    description: "Dado um id, retornar a cadeia completa de documentos relacionados (ancestrais e descendentes), atravessando repositórios via url quando necessário."
+  - id: validate_registry
+    description: "Detectar inconsistências: ids órfãos, referências quebradas em relates_to/parent_*/source_docs, documentos sem status válido, front-matter divergente do registry."
+  - id: bootstrap_existing_project
+    description: "Executar onboarding.phase_1_baseline num repositório de código já existente: gerar BASE, propor ADRs reconstruídos (provenance=reconstructed, status=in_review) e aguardar revisão humana antes de aprovar."
+  - id: register_incident
+    description: "Abrir um INC com severidade classificada por severity_scale, e conduzi-lo pelo incident_lifecycle até resolved/closed."
+  - id: evaluate_postmortem_requirement
+    description: "Aplicar postmortem_policy (por severidade + recurrence_rule) a um INC para decidir se o postmortem é obrigatório completo, obrigatório leve ou opcional."
+  - id: triage_postmortem_action_items
+    description: "Aplicar action_item_triage a cada action item de um PM, decidindo se vira SPEC direto ou uma nova RFC."
+  - id: audit_repo_adherence
+    description: "Executar audit (seção 11): cruzar commits/PRs do repositório do projeto com os registries conhecidos, classificar em coberto/referência quebrada/não documentado, e propor ADRs reconstruídos para o que for arquiteturalmente significativo, sem bloquear nada e sem exigir adesão perfeita à convenção de referência."
+    mechanization:
+      vendor: "claude-code"
+      artifact_type: "command"
+    mechanization_filename: "framework-check"
+  - id: enforce_implementation_gate
+    description: "Antes de escrever ou alterar qualquer código de implementação para uma decisão coberta por este framework, verificar gate_implementation_before_code (seção 13): garantir que SPEC/SDD aplicáveis existam (criando-os primeiro, na mesma resposta, se faltarem) antes de tocar em código — nunca implementar primeiro e documentar depois."
+  - id: enforce_branch_before_commit
+    description: "Antes de criar o primeiro commit de implementação de uma SDD/SPEC/ADR no repositório de projeto, verificar gate_branch_before_commit (seção 14): garantir que existe (ou criar) uma branch dedicada a partir de main e que o commit vai para essa branch — nunca commitar implementação direto em main. Ao final, abrir PR para main em vez de mergear localmente sem revisão."
+    mechanization:
+      vendor: "claude-code"
+      artifact_type: "hook_pretooluse"
+      matcher: "Bash"
+      hook_command: ["bash", "${CLAUDE_PROJECT_DIR}/_framework/scripts/guard_bash.sh"]
+    enforcement_patterns:
+      - pattern: '"git push"*--force*|"git push"*" -f"|"git push"*" -f "*'
+        message: "force-push detectado. Use PR normal."
+      - pattern: '"git push"*" main"|"git push"*" main "*|"git push"*":main"*|"git push"*" main:"*'
+        message: "push direto em main. Abra PR."
+      - pattern: '"git reset --hard"*'
+        message: "reset --hard é destrutivo. Confirme com o usuário antes."
+      - pattern: '"rm -rf ."*|"rm -rf /"*|"rm -rf ~"*'
+        message: "rm -rf de escopo amplo. Confirme com o usuário antes."
+  - id: enforce_content_quality_gate
+    description: "Antes de mover SPEC ou SDD de draft para in_review, rodar a autorrevisão de gate_content_quality (seção 15): checar granularidade requisito↔critério, ausência de placeholder, ausência de NEEDS CLARIFICATION pendente, e presença de 'onde' (arquivo/módulo) exato em todo item técnico."
+    mechanization:
+      vendor: "claude-code"
+      artifact_type: "hook_posttooluse"
+      matcher: "Edit|Write"
+      hook_command: ["python3", "${CLAUDE_PROJECT_DIR}/_framework/scripts/hook_post_edit.py"]
+  - id: enforce_scope_verification
+    description: "Antes de mover uma SDD para implemented, rodar gate_scope_verification (seção 16): confirmar que todo requisito consolidado foi implementado, que todo arquivo tocado está listado na SDD, que não há código extra sem requisito correspondente, e preencher a tabela de evidência de verificação com comando+saída reais desta sessão — nunca marcar critério como passado de memória."
+  - id: verify_sdd_independently
+    description: "Verifica de forma independente se uma SDD foi implementada antes de virar `implemented` — quem implementou não verifica. Use quando o usuário pedir \"verifica a SDD\", \"pode marcar implemented?\", ou ao final de uma sessão de implementação."
+    trigger: "Antes de mover uma SDD de approved para implemented."
+    produces: "Tabela 'Evidência de verificação' preenchida na própria SDD (lida pelo gate 16), validation.md ao lado com veredito PASS/FAIL, descompassos e lições, e validate_state.py com exit 0 na SDD verificada antes de implemented."
+    invariants:
+      - "Quem implementou não verifica — sessão ou subagente separado, contexto limpo."
+      - "Nenhum critério marcado como passado sem comando rodado nesta sessão e saída real."
+      - "Todo critério com teste automatizado passa pelo sensor de discriminação (falha introduzida, teste tem que falhar, depois volta a passar)."
+      - "FAIL não avança status — o descompasso volta para decisão humana."
+    procedure: "procedures/verify-sdd.md"
+    mechanization:
+      vendor: "claude-code"
+      artifact_type: "agent"
+    mechanization_filename: "sdd-verifier"
+  - id: pickup_handoff
+    trigger: "Início de sessão que encontra HANDOFF.md no repositório, ou pedido explícito de retomar trabalho anterior."
+    produces: "Continuidade do trabalho a partir do Next step do HANDOFF, sem reprocessar a sessão que o gerou."
+    invariants:
+      - "Disco vence resumo — todo arquivo de 'Files touched' que for alterado é relido do estado atual antes de editar."
+      - "Nenhum gate é pulado por causa do handover — SDD ainda precisa estar approved antes de implementar, branch ainda é obrigatória antes do commit."
+      - "'Don't do' do HANDOFF é respeitado, não retentado sem perguntar."
+    procedure: "procedures/pickup.md"
+    mechanization:
+      vendor: "claude-code"
+      artifact_type: "hook_sessionstart"
+      matcher: "*"
+      hook_command: ["python3", "${CLAUDE_PROJECT_DIR}/_framework/scripts/hook_session_start.py", "pickup"]
+  - id: write_handover
+    trigger: "Ao encerrar uma sessão de planejamento (SPEC e SDD compilados) antes de outra sessão/agente implementar, ou ao aproximar-se do limite de contexto configurado (padrão ~45% de uso) com trabalho do fluxo ainda pela frente."
+    produces: "HANDOFF.md no repositório correto (projeto ou central, conforme o procedimento), com os ids dos documentos já produzidos, o próximo passo literal, e o que não fazer."
+    invariants:
+      - "Sobrescreve em lugar — não acumula versões antigas de HANDOFF."
+      - "Referencia documentos por id, nunca copia o conteúdo deles."
+      - "Nenhum segredo (credencial, token, .env) entra no arquivo."
+      - "Não avança nenhum gate por conta própria — só registra o status real."
+    procedure: "procedures/handover.md"
+    mechanization:
+      vendor: "claude-code"
+      artifact_type: "hook_sessionstart"
+      matcher: "compact"
+      hook_command: ["python3", "${CLAUDE_PROJECT_DIR}/_framework/scripts/hook_session_start.py", "post-compact"]
+
+##############################################################################
+# 13. GATE OBRIGATÓRIO: NENHUMA IMPLEMENTAÇÃO PULA SPEC/SDD
+##############################################################################
+# Motivação (registrado para não se perder): este gate foi adicionado
+# depois de um incidente real de uso do framework — um ADR (decisão) foi
+# aprovado e a IA implementadora foi direto do ADR para o código,
+# tratando a seção "Consequências" do ADR como especificação suficiente.
+# PRD, Tech Spec e SDD só foram escritos DEPOIS, retroativamente, quando
+# o dono do projeto percebeu a lacuna. O framework não existe para
+# documentar decisões que já viraram código por conta própria — existe
+# para que a especificação (SPEC/SDD) exista ANTES da implementação e
+# seja o que efetivamente guia o código. Uma IA que pula essa ordem está,
+# na prática, tratando o framework como decorativo.
+gate_implementation_before_code:
+  iron_law: "NENHUMA LINHA DE CÓDIGO ANTES DA SPEC E DA SDD EXISTIREM."
+  red_flags:
+    description: >
+      Racionalizações que a IA usa para escapar deste gate. Se você se ouvir
+      pensando qualquer uma delas, o gate está sendo violado NESTE momento —
+      não depois. Reconhecer a frase é a checagem; ela não precisa de
+      julgamento adicional.
+    patterns:
+      - flag: "O ADR tem uma seção Consequências detalhada, é especificação suficiente."
+        reality: "Foi exatamente a falha que originou este gate (v1.5.0). ADR é o porquê, nunca o o quê nem o como."
+      - flag: "Escrevo o documento depois, o código sai igual."
+        reality: "Documento retroativo não guiou nada. Ele registra o que já foi feito, e o gate existe para o oposto."
+      - flag: "É uma mudança pequena, não compensa o overhead."
+        reality: "Tamanho decide QUAIS documentos (ver sizing), nunca se a ordem vale."
+      - flag: "O usuário está com pressa / pediu para ir direto."
+        reality: "Ver if_user_asks_to_skip: avisar e pedir confirmação explícita, nunca obedecer em silêncio."
+      - flag: "Já entendi o que precisa ser feito, o documento seria burocracia."
+        reality: "Entender não é registrar. A próxima sessão não herda o seu entendimento."
+  applies_to: >
+    Qualquer ferramenta de IA (ou pessoa) operando sob este framework que
+    tenha a capacidade de tanto ler/escrever os documentos (repositório
+    central) quanto escrever código (repositório do projeto) — o caso
+    típico de um agente como Claude Code com acesso aos dois repositórios
+    na mesma sessão.
+  rule: >
+    OBRIGATÓRIO, não é sugestão. Antes de criar, editar ou gerar qualquer
+    arquivo de código de implementação (schema, migration, service,
+    endpoint, UI) para uma decisão que já tem RFC e/ou ADR aprovado neste
+    framework, a IA DEVE, na mesma resposta/turno em que decide começar a
+    implementar (nunca depois):
+      1. Verificar se a SPEC aplicável (conforme
+         decision_gates.rfc_to_adr já decidiu) existe no repositório
+         central. Se não existir, CRIÁ-LA PRIMEIRO — antes de qualquer
+         linha de código — seguindo o fluxo normal (seção 3).
+      2. Verificar se a SDD correspondente já foi compilada no
+         repositório do projeto (decision_gates.spec_to_sdd). Se não
+         existir, COMPILÁ-LA PRIMEIRO — antes de qualquer linha de
+         código.
+      3. Só depois de SPEC e SDD existirem (podem ser criadas na mesma
+         sessão, não precisam de dias de intervalo — o gate é de ORDEM,
+         não de tempo de espera) a IA pode começar a escrever código.
+      Em projeto legado (sob 1.x), o par PRD + Tech Spec ocupa o lugar
+      da SPEC nos passos 1 e 3, como já declara decision_gates.spec_to_sdd.
+  not_sufficient_alone: >
+    Um ADR sozinho, mesmo com uma seção "Consequências" detalhada
+    listando o que precisa ser feito, NÃO é especificação suficiente
+    para pular para o código. ADR registra a decisão (o "porquê"); a
+    SPEC registra o requisito (o "o quê") e o desenho executável (o
+    "como"); SDD compila SPEC (+ ADR) para consumo direto de IA de
+    implementação. Pular SPEC/SDD e implementar a partir só do ADR é a
+    violação que este gate existe para impedir.
+  if_user_asks_to_skip: >
+    Se o usuário pedir explicitamente para "ir direto pro código" ou
+    "pular a documentação" a partir de um RFC/ADR, a IA NÃO deve obedecer
+    silenciosamente: deve avisar que isso viola o gate obrigatório deste
+    framework e pedir confirmação explícita antes de implementar sem
+    SPEC/SDD. Confirmado o pedido, a IA registra na SPEC (quando for
+    criada depois, se for) que nasceu retroativa, com nota
+    explícita — mesmo padrão de `provenance` usado em ADR reconstruído.
+  relationship_with_audit: >
+    Isto NÃO duplica a auditoria de aderência (seção 11). A auditoria
+    (seção 11) é a rede de segurança para commits/PRs de terceiros que
+    não seguem este framework ou não sabem dele — descoberta depois do
+    fato, não bloqueia nada, tolera desvio porque adesão de todo o time
+    nunca pode ser garantida. Este gate (seção 13) é diferente: aplica-se
+    à própria IA operando SOB este framework, que conhece a regra — para
+    ela, pular a ordem SPEC/SDD → código não é um desvio tolerável a
+    ser descoberto depois, é um erro de execução a ser evitado antes de
+    acontecer.
+  exception: >
+    Incidentes ativos (INC em estado `open`/`mitigated`) são a única
+    exceção explícita — mitigação de um incidente em produção pode exigir
+    mudança de código antes de qualquer documento, pela própria natureza
+    de incident_lifecycle (seção 5). Fora desse contexto, não há exceção.
+
+##############################################################################
+# 14. GATE OBRIGATÓRIO: NENHUM COMMIT DE IMPLEMENTAÇÃO DIRETO EM MAIN
+##############################################################################
+# Origem: mesmo incidente EVM da seção 13 — com PRD/TS/SDD já no lugar, o
+# código ainda foi commitado direto em main, sem branch nem PR. Ter
+# especificação não substitui isolamento de desenvolvimento.
+#
+# Enforcement real deste gate é branch protection no repositório, não este
+# texto. O que fica aqui é a Iron Law e as red flags; a regra mecânica mora
+# na configuração do repo (ver capabilities.enforce_branch_before_commit).
+gate_branch_before_commit:
+  iron_law: "NENHUM COMMIT DE IMPLEMENTAÇÃO DIRETO EM MAIN."
+  red_flags:
+    patterns:
+      - flag: "É um commit só / mudança trivial, branch é cerimônia."
+        reality: "Sem branch não há check de CI nem janela de revisão. Um commit ruim já nasce integrado."
+      - flag: "Estou sozinho no projeto, não tem quem revisar."
+        reality: "O PR não existe só para revisão humana — é onde os status checks rodam e onde os ids ficam vinculados."
+      - flag: "Já tenho SPEC/SDD prontos, o gate está cumprido."
+        reality: "Gate 13 e gate 14 são independentes. Cumprir um não dispensa o outro."
+      - flag: "Faço o merge local agora e abro o PR depois."
+        reality: "Depois do merge não existe mais PR a abrir. A ordem é o gate."
+      - flag: "Abri o PR, então posso mergear."
+        reality: "A IA pode abrir o PR; mergear precisa de sinal do humano responsável."
+  applies_to: >
+    Qualquer ferramenta de IA (ou pessoa) operando sob este framework que
+    tenha acesso de escrita ao repositório de projeto (seção 1,
+    project_repo) para implementar uma SDD/SPEC/ADR já compilada.
+  rule: >
+    OBRIGATÓRIO, não é sugestão. Antes do primeiro commit de implementação
+    de uma decisão coberta por este framework, a IA DEVE:
+      1. Confirmar que a branch de trabalho atual não é a branch padrão
+         do repositório (main/master) — se for, criar uma branch nova a
+         partir dela antes de qualquer commit.
+      2. Nomear a branch de forma rastreável ao id do documento que a
+         originou (ex.: `feat/ADR-EVM-0011-controle-estoque`,
+         `sdd/SDD-EVM-0009`) — mesmo espírito do id_scheme (seção 7):
+         rastreio pelo nome, não só pela mensagem de commit.
+      3. Levar essa branch a main por PR (pull request / merge request),
+         nunca por merge local direto nem push --force em main. A IA
+         pode abrir o PR, mas não deve mergeá-lo sozinha sem sinal do
+         humano responsável, salvo instrução explícita em contrário.
+      4. Referenciar no corpo do PR os ids relacionados (RFC/ADR/SPEC/
+         SDD), no mesmo padrão de referência usado na auditoria (seção
+         11), para que o PR funcione como o commit/PR "coberto" que essa
+         auditoria espera encontrar.
+  if_user_asks_to_skip: >
+    Se o usuário pedir explicitamente para "commitar direto em main" ou
+    "pular a branch/PR", a IA NÃO deve obedecer silenciosamente: deve
+    avisar que isso viola o gate obrigatório deste framework (reduz
+    revisão e quebra o uso de CI/CD) e pedir confirmação explícita antes
+    de commitar direto em main.
+  exception: >
+    Incidentes ativos (INC em estado `open`/`mitigated`) podem justificar
+    um hotfix mais direto, mas mesmo aí a branch dedicada (ex.:
+    `hotfix/INC-EVM-0003`) é preferível a commit direto em main — a
+    exceção da seção 13 é sobre pular documento, não sobre pular branch.
+    Fora de incidente ativo, não há exceção.
+
+##############################################################################
+# 15. GATE OBRIGATÓRIO: QUALIDADE DE CONTEÚDO DA SPEC E DA SDD
+##############################################################################
+# Motivação: os gates 13/14 garantem ORDEM (documento antes de código,
+# branch antes de commit) — nenhum garante QUALIDADE de conteúdo. Uma SPEC
+# pode existir, estar "approved" e ser vaga
+# o bastante para que a SDD compilada a partir dela saia genérica. A
+# qualidade observada em SDDs anteriores (ex.: SDD-EVM-0001/0009) veio de
+# disciplina espontânea da sessão que compilou, não de exigência do
+# framework — o que significa que não é reprodutível. Este gate torna
+# essa disciplina obrigatória e verificável.
+gate_content_quality:
+  iron_law: "NENHUM DOCUMENTO VAI A in_review COM PLACEHOLDER OU AMBIGUIDADE PENDENTE."
+  red_flags:
+    patterns:
+      - flag: "'Seguir o padrão do projeto' é específico o bastante."
+        reality: "Só se você nomear o arquivo que é o padrão. Sem o nome, é placeholder."
+      - flag: "'Tratar erros apropriadamente' cobre os casos de borda."
+        reality: "É a definição de placeholder: descreve o que fazer sem mostrar como."
+      - flag: "Deixo TBD e preencho quando souber."
+        reality: "TBD em documento que avança de status vira TBD esquecido em documento aprovado."
+      - flag: "A ambiguidade é pequena, decido por conta e sigo."
+        reality: "Suposição silenciosa da IA é o que NEEDS CLARIFICATION existe para impedir."
+      - flag: "Os critérios de aceite estão listados juntos no fim, dá no mesmo."
+        reality: "Bucket de critérios desconectado dos requisitos não permite verificar cobertura 1:1."
+      - flag: "Rodei a checklist mentalmente, está tudo certo."
+        reality: "O scan de placeholder é busca literal pelos termos banidos, não impressão. Rode validate_doc.py."
+  mechanized_by: >
+    _framework/scripts/validate_doc.py — a autorrevisão continua sendo
+    responsabilidade de quem redige, mas deixou de ser a única checagem:
+    o script é o sinal externo, e roda em hook e CI.
+  applies_to: >
+    SPEC e SDD, nesta ordem — a qualidade de uma SDD depende
+    diretamente da qualidade da SPEC de onde foi compilada.
+    Em projeto legado (sob 1.x), PRD e Tech Spec ocupam o lugar da SPEC.
+  rule: >
+    OBRIGATÓRIO antes de mover SPEC/SDD de `draft` para `in_review`:
+      1. Todo requisito funcional (SPEC, Parte 1) tem RF-ID próprio e
+         critério de aceite em notação EARS — não um bucket solto de
+         critérios desconectado dos requisitos. EARS dá a gramática que
+         "verificável objetivamente" não dava sozinho, e é a mesma notação
+         de AWS Kiro e tlc-spec-driven:
+           ubíqua            "O sistema deve <resposta>"
+           dirigida a evento "Quando <gatilho>, o sistema deve <resposta>"
+           dirigida a estado "Enquanto <estado>, o sistema deve <resposta>"
+           indesejada        "Se <condição>, então o sistema deve <resposta>"
+           opcional          "Onde <capacidade>, o sistema deve <resposta>"
+         Em PRD legado (projeto sob 1.x) isto é aviso, não erro.
+      2. Todo contrato técnico (SPEC, Parte 2) tem assinatura/schema exato e
+         aponta o arquivo/módulo onde vive ("onde") — não descrição em
+         prosa livre do tipo "no serviço de X".
+      3. Todo caminho de erro/borda relevante está listado explicitamente
+         (SPEC: "Casos de borda / condições de erro") — "tratar erros apropriadamente" não é conteúdo, é
+         placeholder.
+      4. Nenhum placeholder do tipo "TBD", "definir depois", "ajustar
+         conforme necessário", "seguir padrão do projeto" sem nomear o
+         arquivo padrão, ou qualquer frase que descreva o que fazer sem
+         mostrar como.
+      5. Ambiguidade real (algo que genuinamente depende de decisão do
+         humano) é marcada como `NEEDS CLARIFICATION: <pergunta
+         objetiva>` em vez de resolvida por suposição da IA. Um documento
+         não pode ir para `approved` com `NEEDS CLARIFICATION` pendente —
+         só até `in_review`, e mesmo assim sinalizado ao humano revisor.
+      6. A SDD compilada não introduz critério, contrato ou instrução que
+         não exista em nenhuma SPEC de `source_docs` — compilar não é
+         redigir do zero (regra já existente, seção 3), e este gate
+         proíbe também a direção inversa: a SDD empobrecer o que a SPEC
+         já continha.
+      7. SPEC preenche a seção "Requisitos transversais (sweep)": cada
+         categoria fixa (autorização/permissão, concorrência,
+         idempotência, observabilidade, falha de dependência externa,
+         validação de entrada, limite de volume/rate) tem `Destino`
+         (RF-ID) ou `n/a` com motivo — célula vazia é o mesmo placeholder
+         do item 4, só que por omissão de categoria em vez de frase vaga
+         (STRAT-DTF-0003 item 10, SDD-DTF-0039). Não-retroativo: SPEC
+         redigida antes desta seção existir no template não é reprovada
+         por não a ter (`validate_doc.py`, regra `sweep`).
+  self_review_checklist: >
+    A IA que redige o documento roda esta checklist nela mesma, como
+    último passo antes de propor a mudança de status — não é revisão de
+    outra pessoa/agente, é autorrevisão (ver template de cada tipo,
+    seção "Autorrevisão antes de status in_review" / "Verificação de
+    escopo"): (a) cobertura — todo requisito/contrato do documento de
+    origem tem contrapartida no documento atual; (b) scan de placeholder
+    — busca literal pelos termos banidos no item 4 acima; (c)
+    consistência de nome — um contrato chamado `criarPedido` numa seção e
+    `criarNovoPedido` noutra é bug de documento, não estilo.
+  not_a_ci_gate: >
+    Como os gates 13/14, este não é imposto por CI — é uma
+    responsabilidade da IA que redige o documento, cobrada no momento da
+    transição de status. Divergência encontrada depois (documento
+    `approved` com placeholder) é achado de auditoria (seção 11), não
+    motivo para travar retroativamente.
+
+##############################################################################
+# 16. GATE OBRIGATÓRIO: VERIFICAÇÃO DE ESCOPO ANTES DE SDD "IMPLEMENTED"
+##############################################################################
+# Motivação: gate 13 garante que a SDD existe antes do código. Nada,
+# antes deste gate, garantia que o código entregue fosse exatamente o que
+# a SDD pediu — nem mais (scope creep silencioso: abstração, config ou
+# refactor "já que estava ali") nem menos (requisito que ficou de fora
+# sem ninguém perceber). "Implemented" também não podia ser confiado sem
+# evidência: um checklist marcado `[x]` de memória não prova nada.
+gate_scope_verification:
+  iron_law: "NENHUM implemented SEM COMANDO RODADO NESTA SESSÃO E SAÍDA REAL."
+  red_flags:
+    patterns:
+      - flag: "Rodei esse teste há pouco, deve estar passando."
+        reality: "Se você não tem a saída desta sessão, você não tem evidência. Rode de novo."
+      - flag: "O teste passou de primeira, então está tudo certo."
+        reality: "Teste que nunca falhou pode não estar testando nada. Confirme que ele reprova a implementação errada."
+      - flag: "Já que eu estava ali, aproveitei e refatorei/abstraí."
+        reality: "Código sem requisito correspondente é scope creep. Remova antes do commit."
+      - flag: "Esse arquivo eu toquei mas é detalhe, não precisa entrar na SDD."
+        reality: "Arquivo fora da lista é escopo não registrado ou scope creep — nunca uma terceira coisa silenciosa."
+      - flag: "Faltou um requisito pequeno, marco implemented e completo depois."
+        reality: "Requisito faltando significa parcial. Mantenha approved."
+      - flag: "O subagente relatou que passou."
+        reality: "Relato de outro agente sobre o próprio trabalho não substitui verificação independente."
+  mechanized_by: >
+    _framework/scripts/validate_state.py — checa o que dá para checar de
+    fora: tabela de evidência preenchida, uma linha por critério de aceite,
+    sem resultado assumido, checklist de escopo toda marcada.
+  applies_to: "SDD, no momento da transição approved -> implemented."
+  rule: >
+    OBRIGATÓRIO antes de mover uma SDD para `implemented`:
+      1. Todo item de "Requisitos consolidados" e "Especificação técnica
+         consolidada" da SDD tem código correspondente identificável —
+         se algo ficou de fora, a SDD não está implementada, está
+         parcial (mantenha `approved`, não avance o status).
+      2. Todo arquivo efetivamente criado/alterado pela implementação
+         está listado na SDD (seção técnica ou instruções à IA). Arquivo
+         tocado que não está na SDD é um destes dois casos, nunca
+         silencioso: (a) escopo que faltou registrar — volte e atualize a
+         SDD antes de prosseguir; ou (b) scope creep — remova antes do
+         commit final.
+      3. Nenhuma abstração, dependência nova, feature flag ou refactor
+         que não foi pedido por nenhum requisito da SDD. "Já que eu
+         estava ali" não é justificativa válida sob este framework (ver
+         também `principio_minimalismo`, se definido em guias do
+         projeto).
+      4. A tabela "Evidência de verificação" da SDD é preenchida com o
+         comando de fato executado NESTA sessão e a saída real — cada
+         critério de "Critérios de aceite" precisa de uma linha de
+         evidência correspondente. "Deve passar" ou resultado assumido de
+         memória não satisfaz este item; rode o comando de novo se não
+         tiver certeza de quando rodou pela última vez.
+      5. A verificação é feita por quem NÃO implementou (skill
+         `verify-sdd`, sessão ou subagente separado, sem herdar o
+         histórico da sessão de implementação). Quem escreveu o código tem
+         o resultado como conclusão desejada. Quando for inevitável ser a
+         mesma sessão, isso é declarado na tabela — verificação não
+         independente é dado mais fraco, e o humano precisa saber.
+      6. Todo critério com teste automatizado passa pelo sensor de
+         discriminação: introduzir uma falha de comportamento real em
+         espaço descartável (stash/cópia/worktree, nunca commit), confirmar
+         que o teste FALHA, e desfazer. Teste que passa com a implementação
+         quebrada não verifica nada — é ruído verde. Critério sem teste
+         automatizado é declarado como tal, nunca marcado como verificado
+         por leitura de código.
+  mechanized_by: >
+    _framework/scripts/validate_state.py para o que é checável de fora
+    (tabela preenchida, uma linha por critério, sem resultado assumido) e
+    a skill `verify-sdd` para o que exige julgamento (conformidade nas duas
+    direções, execução dos comandos, sensor de discriminação).
+  evidence_standard: >
+    Mesmo padrão de rigor de "evidência antes de afirmação" — nenhuma
+    reivindicação de conclusão (`implemented`, "critério atendido",
+    "teste passa") é aceita sem o comando + saída que a comprova, gerados
+    na mesma sessão em que a reivindicação é feita. Relatório de outro
+    agente/subagente sobre o próprio trabalho não substitui rodar a
+    verificação de forma independente.
+  if_scope_mismatch_found: >
+    Se a verificação encontrar requisito não implementado ou código sem
+    requisito correspondente, a IA não avança o status silenciosamente:
+    relata o descompasso ao humano responsável e propõe (a) atualizar a
+    SDD para refletir o escopo real acordado, ou (b) remover o código
+    fora de escopo — a decisão de qual caminho é do humano, não da IA.
+  ci_gate: >
+    Camada 2 (CI, obrigatória, tool-agnostic, opt-in por projeto):
+    _framework/scripts/ci_gate_verify_sdd.py bloqueia merge de PR que muda
+    uma SDD para `implemented` sem `validation-SDD-{ID}.md` de veredito
+    PASS real, cobertura completa de RF-ID e critérios de aceite não
+    afrouxados entre `approved` e `implemented` — com válvula de escape
+    para incidente ativo validada contra o registry central via checkout
+    raso (SDD-DTF-0032, ADR-DTF-0004, ADR-DTF-0005). Complementa, nunca
+    substitui, a verificação de sessão (itens 1-6 acima).
+
+##############################################################################
+# 17. SKILL DE TRANSFERÊNCIA DE CONTEXTO: HANDOVER / PICKUP
+##############################################################################
+# Motivação: o fluxo deste framework frequentemente separa quem planeja
+# (compila SPEC/SDD) de quem implementa (escreve código a partir da
+# SDD) — inclusive quando é a mesma pessoa, mas em sessões de IA
+# diferentes para não estourar o orçamento de contexto de uma sessão só.
+# Sem um formato padrão de passagem, a sessão implementadora reconstrói
+# contexto lendo tudo de novo (SPEC/SDD inteiros, histórico de decisão)
+# ou herda uma sessão inchada. Handover resolve isso com um artefato de
+# passagem pequeno e padronizado — inspirado no padrão observado em
+# implementações públicas de "handover"/"pickup" (ex.:
+# github.com/vmihalis/claude-handover), adaptado para apontar aos ids do
+# framework em vez de reexplicar contexto em prosa.
+handover_protocol:
+  normative_source: >
+    Esta seção é resumo estrutural. O procedimento normativo completo
+    vive em _framework/procedures/handover.md (geração do HANDOFF.md) e
+    _framework/procedures/pickup.md (retomada) — em caso de divergência,
+    o procedimento manda.
+  when_to_trigger:
+    - "Planejamento terminou (SDD compilada e approved) e a implementação vai rodar em sessão/agente separado."
+    - "Uso de contexto da sessão atual atinge ~45% (limite configurável pelo usuário) e ainda há trabalho do fluxo (documentar ou implementar) pela frente."
+    - "Troca deliberada de sessão/agente no meio da implementação (ex.: subagente por tarefa, como em execução multi-agente)."
+  artifact:
+    name: "HANDOFF.md"
+    location: >
+      Repositório de projeto (junto de docs/sdd/) quando o handover é
+      para implementação; repositório central quando o handover é entre
+      etapas de documentação (ex.: RFC/ADR redigidos, SPEC pendente).
+      Sobrescreve em lugar dentro do repositório (não acumula histórico
+      de handovers antigos — o histórico real é o commit/PR, não o
+      HANDOFF).
+    required_sections: ["Goal", "Status", "Ids relacionados", "Files touched", "Key decisions", "Open threads / blockers", "Next step", "Don't do"]
+  content_rule: >
+    HANDOFF referencia ids do framework (SDD-X, SPEC-X) em vez de
+    reescrever o conteúdo desses documentos — a sessão seguinte lê os
+    documentos originais quando precisar de detalhe, o HANDOFF é só o
+    mapa de "onde parei e o que fazer a seguir". Nunca duplica o que já
+    está em source_docs ou nos Critérios de aceite da SDD.
+  no_placeholder: >
+    Mesma proibição do gate_content_quality (seção 15): "Status" e "Next
+    step" não podem ser vagos ("fazer os ajustes pendentes") — precisam
+    de ação literal e específica.
+  pickup_rule: >
+    A sessão/agente que retoma lê o HANDOFF, relê (do disco, não da
+    descrição do HANDOFF) qualquer arquivo listado em "Files touched" que
+    for alterar, reconhece em poucas linhas (objetivo + o que está pronto
+    + próximo passo) e prossegue direto para "Next step" sem pedir
+    confirmação genérica de "posso continuar?" — a menos que "Next step"
+    seja de fato ambíguo, caso em que faz UMA pergunta específica.
+  relationship_with_gates: >
+    Handover não substitui nenhum gate anterior — SDD ainda precisa
+    existir e estar `approved` antes de implementar (seção 13), branch
+    dedicada ainda é obrigatória antes do commit (seção 14), e a
+    verificação de escopo (seção 16) ainda roda antes de `implemented`,
+    independente de quantas sessões/handoffs aconteceram no meio.
+
+##############################################################################
+# 18. LIÇÕES LOCAIS E CONGELAMENTO DO NÚCLEO
+##############################################################################
+# Motivação: entre a v1.4.0 e a v1.7.0 — duas semanas — cada falha de
+# execução de um agente virou uma seção nova e obrigatória deste arquivo,
+# válida para todos os projetos, para sempre. Uma falha local produziu lei
+# global quatro vezes seguidas, e o arquivo dobrou de tamanho sem que a
+# taxa de falha caísse. O problema não era a ausência da regra seguinte:
+# era não existir lugar para uma lição morar sem virar regra.
+lessons_policy:
+  iron_law: "FALHA DE EXECUÇÃO VIRA LIÇÃO LOCAL, NÃO VERSÃO NOVA DO FRAMEWORK."
+  artifact:
+    name: "LESSONS.md"
+    location: >
+      Repositório de projeto (junto de docs/sdd/) para lições de
+      implementação; repositório central, em docs/{PROJECT_CODE}/, para
+      lições de documentação. Acumula — diferente do HANDOFF.md, que
+      sobrescreve, aqui o histórico É o valor.
+    entry_format: >
+      Uma entrada por lição, com: data, o que falhou concretamente (com o
+      id do documento ou o sha do commit), a red flag que teria pegado a
+      falha antes, e a correção adotada. Sem entrada genérica do tipo
+      "ter mais atenção" — se não dá para transformar em red flag ou em
+      checagem de script, não é lição, é lamento.
+    recurrence_key_convention: >
+      Campo opcional, retrocompatível (entrada antiga sem ele continua
+      válida): `**Chave de recorrência:** <slug>` no corpo da entrada,
+      identificando a MESMA falha de forma estável entre repositórios
+      (slug curto, descritivo, não taxonomia fixa). `_framework/scripts/lessons_check.py`
+      (SDD-DTF-0038) lê esse campo em 2+ `LESSONS.md` e reporta como
+      candidata a promoção todo slug recorrente em arquivos distintos —
+      mecaniza a CONTAGEM do critério 1 abaixo, não a decisão de
+      promover. Entrada já promovida ganha `**Status da lição:**
+      confirmada` no corpo e sai da contagem (decisão humana já tomada,
+      não deve voltar a aparecer como candidata).
+  when_a_lesson_becomes_a_rule: >
+    Uma lição só sobe para este arquivo (virando regra global) se as três
+    condições valerem juntas:
+      1. A mesma falha aparece no LESSONS.md de pelo menos DOIS projetos
+         diferentes — uma ocorrência é acidente, duas é padrão.
+      2. Existe uma checagem mecânica possível (script, hook ou CI) — se a
+         única forma de impor é pedir boa-fé em prosa, a evidência é de
+         que já não funcionou.
+      3. A regra cabe como red flag ou como item de validator existente,
+         sem criar seção nova. Seção nova é o último recurso, não o
+         primeiro.
+  core_freeze: >
+    A partir da v2.0.0, este arquivo é tratado como núcleo estável. Bump de
+    versão por tropeço pontual de agente não é mais o caminho previsto: o
+    caminho é red flag (seções 13-16) ou LESSONS.md do projeto. Evolução do
+    framework segue existindo para mudança de desenho — tipo novo, fluxo
+    novo, mecanização nova —, não para reagir a cada violação observada.
+  non_retroactive: >
+    Consequência já valia e agora fica explícita: evoluir o framework nunca
+    altera projeto já mapeado. `framework_version` no registry declara sob
+    qual versão o projeto opera, e ficar para trás é estado válido, não
+    dívida (ver registry_tools.py, check_framework_version).
+
+##############################################################################
+# 19. SIZING: A PROFUNDIDADE DO FLUXO É FUNÇÃO DO BLAST RADIUS
+##############################################################################
+# Motivação: até a v1.7.0 o funil era fixo — toda mudança atravessava
+# STRAT, RFC, ADR, PRD, TS e SDD. O custo real observado: ~620 linhas de
+# documento (RFC 293 + PRD 137 + TS 190) para configurar ESLint, Prettier,
+# husky e um workflow de CI num projeto de uma pessoa. Documento que não é
+# lido por ninguém não é rastreabilidade, é cerimônia — e cerimônia
+# desacredita o framework inteiro, inclusive nas partes onde ele paga.
+#
+# A régua de tamanho NÃO é uma nova régua: reaproveita os 5 critérios de
+# decision_gates.rfc_to_adr, que já são o teste de significância do
+# framework. O que muda é que agora eles decidem também QUANTOS documentos
+# existem, não só se um ADR é necessário.
+sizing:
+  iron_law: "TAMANHO DECIDE QUAIS DOCUMENTOS, NUNCA SE A ORDEM VALE."
+  principle: >
+    A ausência de um artefato É o registro de que a fase foi pulada
+    deliberadamente — não se cria documento para declarar que outro
+    documento não era necessário. Quem quiser auditar o porquê lê o campo
+    `sizing` no front-matter da SPEC ou da SDD.
+  levels:
+    - id: small
+      criteria: >
+        Toca ~3 arquivos ou menos, nenhum critério de
+        decision_gates.rfc_to_adr se aplica, e o comportamento externo do
+        produto não muda (ajuste de config, correção pontual, tooling).
+      documents: ["SDD"]
+      note: >
+        A SDD carrega o requisito e o desenho no próprio corpo. O vínculo
+        com o código é o `Refs:` no commit/PR. Nenhuma SPEC, nenhuma RFC.
+    - id: medium
+      criteria: "Feature contida em um domínio, nenhum critério do gate rfc_to_adr se aplica."
+      documents: ["SPEC", "SDD"]
+    - id: large
+      criteria: "Pelo menos 1 critério de decision_gates.rfc_to_adr se aplica."
+      documents: ["RFC", "ADR", "SPEC", "SDD"]
+    - id: complex
+      criteria: >
+        Vários critérios do gate se aplicam, ou a mudança é cross-team, ou
+        precisa de direção estratégica que ainda não existe em nenhuma RFC.
+      documents: ["STRAT (opcional)", "RFC", "ADR", "SPEC", "SDD"]
+  who_decides: >
+    A IA propõe o nível aplicando os critérios acima e DECLARA qual usou,
+    no campo `sizing` do front-matter. O humano pode subir o nível a
+    qualquer momento; descer exige justificativa registrada no documento.
+  what_never_changes: >
+    Sizing decide QUAIS documentos existem. Nunca dispensa: a ordem
+    documento→código (seção 13), a branch dedicada (seção 14), a qualidade
+    de conteúdo do que for escrito (seção 15), nem a verificação de escopo
+    com evidência antes de `implemented` (seção 16). Uma mudança `small`
+    tem menos documento, não menos gate.
+  red_flags:
+    patterns:
+      - flag: "É simples, pulo a SDD também."
+        reality: "small já é o piso. Abaixo da SDD não existe nível — existe código sem especificação."
+      - flag: "Classifico como small para ir mais rápido."
+        reality: "O critério é objetivo: ~3 arquivos, nenhum critério do gate, sem mudança de comportamento externo. Se falhar em um, não é small."
+      - flag: "É large, mas a RFC eu escrevo depois."
+        reality: "Documento retroativo é a violação da seção 13 com outro nome."

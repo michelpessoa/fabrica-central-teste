@@ -1,0 +1,121 @@
+name: main-guard
+
+# Detecta, do lado do servidor, violações do gate 14 nesta branch main.
+#
+# Por que detecção e não bloqueio: este repositório é privado numa conta
+# em plano User, onde branch protection e rulesets respondem
+# 403 "Upgrade to GitHub Pro". Não existe caminho de API para impedir o
+# push. O que existe é este workflow, que roda DEPOIS e transforma
+# violação silenciosa em violação visível.
+#
+# O hook local (.githooks/pre-push) continua sendo a primeira barreira.
+# Este workflow cobre justamente os buracos que o hook não cobre:
+# `--no-verify`, clone sem `core.hooksPath` configurado, e push feito pela
+# interface web ou por outra máquina.
+
+on:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+  issues: write
+  pull-requests: read
+
+jobs:
+  gate-14:
+    name: gate-14
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Detectar violação
+        id: detect
+        env:
+          GH_TOKEN: ${{ github.token }}
+          BEFORE: ${{ github.event.before }}
+          AFTER: ${{ github.event.after }}
+          FORCED: ${{ github.event.forced }}
+          DELETED: ${{ github.event.deleted }}
+          ACTOR: ${{ github.actor }}
+          REPO: ${{ github.repository }}
+        run: |
+          set -euo pipefail
+          violations=""
+
+          if [ "$FORCED" = "true" ]; then
+            violations+=$'- **Force-push em `main`.** Histórico já publicado foi reescrito.\n'
+          fi
+          if [ "$DELETED" = "true" ]; then
+            violations+=$'- **Deleção de `main`.**\n'
+          fi
+
+          # Cada commit novo deste push precisa estar associado a um PR.
+          # Merge, squash e rebase merge todos deixam essa associação; push
+          # direto não deixa nenhuma.
+          if [ "$BEFORE" != "0000000000000000000000000000000000000000" ] && [ "$FORCED" != "true" ]; then
+            orphans=""
+            for sha in $(git rev-list --no-merges "$BEFORE..$AFTER"); do
+              n=$(gh api "repos/$REPO/commits/$sha/pulls" --jq 'length' 2>/dev/null || echo 0)
+              if [ "$n" = "0" ]; then
+                subject=$(git log -1 --pretty=%s "$sha")
+                orphans+=$'- `'"${sha:0:8}"$'` '"$subject"$'\n'
+              fi
+            done
+            if [ -n "$orphans" ]; then
+              violations+=$'- **Commit(s) sem PR associado** — chegaram em `main` sem passar por revisão:\n'"$orphans"
+            fi
+          fi
+
+          if [ -z "$violations" ]; then
+            echo "✅ Nenhuma violação do gate 14 neste push."
+            echo "violated=false" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          echo "violated=true" >> "$GITHUB_OUTPUT"
+          {
+            echo 'body<<GUARDEOF'
+            echo "Push em \`main\` fora do caminho previsto pelo gate 14, por @$ACTOR."
+            echo
+            echo "> **NENHUM COMMIT DE IMPLEMENTAÇÃO DIRETO EM MAIN.**"
+            echo
+            echo "$violations"
+            echo "Run: https://github.com/$REPO/actions/runs/${{ github.run_id }}"
+            echo
+            echo "Este repositório é privado em plano sem branch protection, então"
+            echo "o push não pôde ser impedido — só registrado. O hook"
+            echo "\`.githooks/pre-push\` é a primeira barreira; confirme que o clone"
+            echo "usado tem \`git config core.hooksPath .githooks\`, e que o push não"
+            echo "foi feito com \`--no-verify\`."
+            echo
+            echo "Se a mudança era legítima, nada precisa ser revertido — feche a"
+            echo "issue registrando o motivo no \`LESSONS.md\` do projeto"
+            echo "(\`lessons_policy\`, seção 18 de \`workflow-rules.yaml\`)."
+            echo 'GUARDEOF'
+          } >> "$GITHUB_OUTPUT"
+
+          echo "::error::Violação do gate 14 detectada — ver a issue aberta por este run."
+
+      - name: Abrir issue
+        if: steps.detect.outputs.violated == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+          BODY: ${{ steps.detect.outputs.body }}
+        run: |
+          set -euo pipefail
+          title="gate 14: push direto em main (${GITHUB_SHA:0:8})"
+          # Uma issue por sha — reexecutar o run não duplica.
+          existing=$(gh issue list --repo "$REPO" --state all --search "\"${GITHUB_SHA:0:8}\" in:title" --json number --jq 'length')
+          if [ "$existing" != "0" ]; then
+            echo "Issue já existe para este commit — nada a fazer."
+            exit 0
+          fi
+          gh issue create --repo "$REPO" --title "$title" --body "$BODY"
+
+      - name: Reprovar o run
+        if: steps.detect.outputs.violated == 'true'
+        run: exit 1

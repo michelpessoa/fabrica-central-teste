@@ -1,0 +1,49 @@
+#!/usr/bin/env bash
+#
+# Hook de pre-push: recusa push direto em main e qualquer force-push.
+#
+# Existe porque este repositório é privado num plano em que a proteção de
+# branch do GitHub não está disponível (tanto branch protection clássica
+# quanto rulesets respondem 403 "Upgrade to GitHub Pro"). Sem proteção do
+# lado do servidor, a Iron Law do gate 14 — NENHUM COMMIT DE IMPLEMENTAÇÃO
+# DIRETO EM MAIN — não tem nenhuma barreira mecânica.
+#
+# Este hook é a barreira possível. Limite honesto: roda no cliente, então
+# vale para quem tiver `core.hooksPath` configurado e some com
+# `--no-verify`. Não substitui proteção de servidor; reduz o acidente, não
+# impede o deliberado.
+#
+# Instalar: git config core.hooksPath .githooks
+set -euo pipefail
+
+PROTECTED="main"
+Z40="0000000000000000000000000000000000000000"
+
+while read -r local_ref local_sha remote_ref remote_sha; do
+  branch="${remote_ref#refs/heads/}"
+  [ "$branch" = "$PROTECTED" ] || continue
+
+  if [ "$local_sha" = "$Z40" ]; then
+    echo "pre-push: recusado — apagar a branch $PROTECTED." >&2
+    exit 1
+  fi
+
+  if [ "$remote_sha" != "$Z40" ] && ! git merge-base --is-ancestor "$remote_sha" "$local_sha"; then
+    echo "pre-push: recusado — force-push em $PROTECTED reescreveria histórico já publicado." >&2
+    exit 1
+  fi
+
+  echo "pre-push: recusado — push direto em $PROTECTED." >&2
+  echo >&2
+  echo "  Gate 14: NENHUM COMMIT DE IMPLEMENTAÇÃO DIRETO EM MAIN." >&2
+  echo "  Abra uma branch e um PR:" >&2
+  echo >&2
+  echo "    git switch -c <tipo>/<id-ou-descricao>" >&2
+  echo "    git push -u origin HEAD" >&2
+  echo "    gh pr create --base main" >&2
+  echo >&2
+  echo "  Emergência, com consciência do que está pulando: --no-verify" >&2
+  exit 1
+done
+
+exit 0
