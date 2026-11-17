@@ -1,0 +1,50 @@
+{
+  "hooks": {
+    "SessionStart": [
+      {
+        "matcher": "*",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3",
+            "args": ["${CLAUDE_PROJECT_DIR}/_framework/scripts/hook_session_start.py", "pickup"]
+          }
+        ]
+      },
+      {
+        "matcher": "compact",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3",
+            "args": ["${CLAUDE_PROJECT_DIR}/_framework/scripts/hook_session_start.py", "post-compact"]
+          }
+        ]
+      }
+    ],
+    "PreToolUse": [
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash",
+            "args": ["${CLAUDE_PROJECT_DIR}/_framework/scripts/guard_bash.sh"]
+          }
+        ]
+      }
+    ],
+    "PostToolUse": [
+      {
+        "matcher": "Edit|Write",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3",
+            "args": ["${CLAUDE_PROJECT_DIR}/_framework/scripts/hook_post_edit.py"]
+          }
+        ]
+      }
+    ]
+  }
+}

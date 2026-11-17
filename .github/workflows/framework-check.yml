@@ -67,7 +67,9 @@ jobs:
       - name: Índices de SDD e registry.md em dia
         run: |
           python3 _framework/scripts/render_indexes.py --check
-          python3 _framework/scripts/generate_registry_md.py docs/DTF --check
+          for projeto in docs/ZERO docs/COBAIA; do
+            python3 _framework/scripts/generate_registry_md.py "$projeto" --check
+          done
 
       - name: Higiene de cache (ignorados e não rastreados)
         run: |
