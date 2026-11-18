@@ -2,7 +2,7 @@
 id: SPEC-ZERO-0001
 type: SPEC
 title: "Aviso por e-mail de mudanças em tarefas, com histórico e opção de desligar por usuário"
-status: in_review
+status: approved
 project: "ZERO"
 owner: "Michel Pessoa"
 created: "2026-11-18"
@@ -11,6 +11,12 @@ relates_to: []
 parent_rfc: null
 parent_adr: null
 sizing: "medium"
+approved_by:
+  kind: "human"
+  actor: "michelpessoa"
+  at: "2026-11-18T23:37:33Z"
+  content_sha256: "a468afff2a926c8113e8d0a50710cf454bcf53fcf89f7205abddbf23168666c0"
+  evidence: "https://github.com/michelpessoa/fabrica-central-teste/pull/4#pullrequestreview-5966976811"
 supersedes: null
 superseded_by: null
 tags: [fabrica-descoberta]

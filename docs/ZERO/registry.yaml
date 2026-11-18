@@ -6,7 +6,7 @@ documents:
   - id: SPEC-ZERO-0001
     type: SPEC
     title: "Aviso por e-mail de mudanças em tarefas, com histórico e opção de desligar por usuário"
-    status: in_review
+    status: approved
     owner: "Michel Pessoa"
     created: "2026-11-18"
     updated: "2026-11-18"
