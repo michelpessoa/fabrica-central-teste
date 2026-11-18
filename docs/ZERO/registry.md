@@ -4,4 +4,11 @@ _Gerado automaticamente a partir de `registry.yaml`. Não editar manualmente. Fr
 
 Repositório de código: https://github.com/michelpessoa/fabrica-zero
 
-Total de documentos: **0**
+Total de documentos: **1**
+
+
+## SPEC (1)
+
+| ID | Título | Status | Owner | Atualizado | Relacionados |
+|---|---|---|---|---|---|
+| `SPEC-ZERO-0001` | Aviso por e-mail de mudanças em tarefas, com histórico e opção de desligar por usuário | in_review | Michel Pessoa | 2026-11-18 | — |
