@@ -13,3 +13,13 @@ documents:
     relates_to: []
     path: "docs/ZERO/03-spec/SPEC-ZERO-0001.md"
     tags: [fabrica-descoberta]
+  - id: SPEC-ZERO-0002
+    type: SPEC
+    title: "ZERO: listagem de tarefas vencidas e a vencer por responsável"
+    status: in_review
+    owner: "Michel Pessoa"
+    created: "2026-11-19"
+    updated: "2026-11-19"
+    relates_to: []
+    path: "docs/ZERO/03-spec/SPEC-ZERO-0002.md"
+    tags: [fabrica-descoberta]
