@@ -2,15 +2,21 @@
 id: SPEC-ZERO-0002
 type: SPEC
 title: "ZERO: listagem de tarefas vencidas e a vencer por responsável"
-status: in_review
+status: approved
 project: "ZERO"
 owner: "Michel Pessoa"
 created: "2026-11-19"
-updated: "2026-11-19"
+updated: "2026-11-18"
 relates_to: []
 parent_rfc: null
 parent_adr: null
 sizing: "medium"
+approved_by:
+  kind: "human"
+  actor: "michelpessoa"
+  at: "2026-11-19T00:17:36Z"
+  content_sha256: "04776252bce73aae7f8cf325076ebe19eb2a1adde4ed4b94f829b4c88041b816"
+  evidence: "https://github.com/michelpessoa/fabrica-central-teste/pull/5#pullrequestreview-5967331260"
 supersedes: null
 superseded_by: null
 tags: [fabrica-descoberta]

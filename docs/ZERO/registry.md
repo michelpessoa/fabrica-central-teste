@@ -12,4 +12,4 @@ Total de documentos: **2**
 | ID | Título | Status | Owner | Atualizado | Relacionados |
 |---|---|---|---|---|---|
 | `SPEC-ZERO-0001` | Aviso por e-mail de mudanças em tarefas, com histórico e opção de desligar por usuário | approved | Michel Pessoa | 2026-11-18 | — |
-| `SPEC-ZERO-0002` | ZERO: listagem de tarefas vencidas e a vencer por responsável | in_review | Michel Pessoa | 2026-11-19 | — |
+| `SPEC-ZERO-0002` | ZERO: listagem de tarefas vencidas e a vencer por responsável | approved | Michel Pessoa | 2026-11-18 | — |
