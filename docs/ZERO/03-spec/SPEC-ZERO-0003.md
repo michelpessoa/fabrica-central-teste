@@ -2,7 +2,7 @@
 id: SPEC-ZERO-0003
 type: SPEC
 title: "Listagem de tarefas com filtros (biblioteca e comando python -m tarefas listar)"
-status: in_review
+status: approved
 project: "ZERO"
 owner: "Michel Pessoa"
 created: "2026-11-20"
@@ -11,6 +11,12 @@ relates_to: []
 parent_rfc: null
 parent_adr: null
 sizing: "medium"
+approved_by:
+  kind: "human"
+  actor: "michelpessoa"
+  at: "2026-11-20T23:33:30Z"
+  content_sha256: "50a26c48d9b0f747b5300cce9e29e2cac7b1821299de9ac848b1a9228d16e278"
+  evidence: "https://github.com/michelpessoa/fabrica-central-teste/pull/7#pullrequestreview-6000806241"
 supersedes: null
 superseded_by: null
 tags: [fabrica-descoberta]
