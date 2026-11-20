@@ -1,5 +1,5 @@
 project: "COBAIA"
-framework_version: "2.6.0"
+framework_version: "2.7.0"
 approvers: [michelpessoa]
 repository: "https://github.com/michelpessoa/fabrica-cobaia"
 documents: []
