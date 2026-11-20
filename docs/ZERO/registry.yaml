@@ -23,3 +23,13 @@ documents:
     relates_to: []
     path: "docs/ZERO/03-spec/SPEC-ZERO-0002.md"
     tags: [fabrica-descoberta]
+  - id: SPEC-ZERO-0003
+    type: SPEC
+    title: "Listagem de tarefas com filtros (biblioteca e comando python -m tarefas listar)"
+    status: in_review
+    owner: "Michel Pessoa"
+    created: "2026-11-20"
+    updated: "2026-11-20"
+    relates_to: []
+    path: "docs/ZERO/03-spec/SPEC-ZERO-0003.md"
+    tags: [fabrica-descoberta]
