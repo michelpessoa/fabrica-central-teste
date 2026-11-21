@@ -2,7 +2,7 @@
 id: SPEC-ZERO-0004
 type: SPEC
 title: "Resumo das tarefas por responsável e status"
-status: in_review
+status: approved
 project: "ZERO"
 owner: "Michel Pessoa"
 created: "2026-11-21"
@@ -11,6 +11,12 @@ relates_to: []
 parent_rfc: null
 parent_adr: null
 sizing: "medium"
+approved_by:
+  kind: "human"
+  actor: "michelpessoa"
+  at: "2026-11-21T01:44:55Z"
+  content_sha256: "6f11dd568b6eaa4b6d2c333d87ede58163e65c7399e73b8a00165c7efe302365"
+  evidence: "https://github.com/michelpessoa/fabrica-central-teste/pull/8#pullrequestreview-6001919393"
 supersedes: null
 superseded_by: null
 tags: [fabrica-descoberta]

@@ -36,7 +36,7 @@ documents:
   - id: SPEC-ZERO-0004
     type: SPEC
     title: "Resumo das tarefas por responsável e status"
-    status: in_review
+    status: approved
     owner: "Michel Pessoa"
     created: "2026-11-21"
     updated: "2026-11-21"
