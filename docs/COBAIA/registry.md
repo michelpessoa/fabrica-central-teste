@@ -4,7 +4,14 @@ _Gerado automaticamente a partir de `registry.yaml`. Não editar manualmente. Fr
 
 Repositório de código: https://github.com/michelpessoa/fabrica-cobaia
 
-Total de documentos: **0**
+Total de documentos: **1**
+
+
+## SPEC (1)
+
+| ID | Título | Status | Owner | Atualizado | Relacionados |
+|---|---|---|---|---|---|
+| `SPEC-COBAIA-0001` | Mínimos de estoque com reposição sugerida e persistência em JSON | in_review | Michel Pessoa | 2026-11-21 | — |
 
 ## Documentos originados
 
