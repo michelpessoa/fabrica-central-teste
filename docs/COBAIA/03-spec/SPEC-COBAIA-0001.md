@@ -2,7 +2,7 @@
 id: SPEC-COBAIA-0001
 type: SPEC
 title: "Mínimos de estoque com reposição sugerida e persistência em JSON"
-status: in_review
+status: approved
 project: "COBAIA"
 owner: "Michel Pessoa"
 created: "2026-11-21"
@@ -11,6 +11,12 @@ relates_to: []
 parent_rfc: null
 parent_adr: null
 sizing: "medium"
+approved_by:
+  kind: "human"
+  actor: "michelpessoa"
+  at: "2026-11-21T19:23:15Z"
+  content_sha256: "1029f9de5d9ab3f4c17cf3d0ab862583b77b2e90353a366357201ce2d5d86506"
+  evidence: "https://github.com/michelpessoa/fabrica-central-teste/pull/10#pullrequestreview-6007662573"
 supersedes: null
 superseded_by: null
 tags: [fabrica-descoberta]
