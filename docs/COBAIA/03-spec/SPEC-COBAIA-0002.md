@@ -2,7 +2,7 @@
 id: SPEC-COBAIA-0002
 type: SPEC
 title: "Histórico de movimentações de estoque e consultas de saldo calculadas a partir dele"
-status: in_review
+status: approved
 project: "COBAIA"
 owner: "Michel Pessoa"
 created: "2026-11-23"
@@ -11,6 +11,12 @@ relates_to: []
 parent_rfc: null
 parent_adr: null
 sizing: "medium"
+approved_by:
+  kind: "human"
+  actor: "michelpessoa"
+  at: "2026-11-23T21:23:49Z"
+  content_sha256: "a9767c05663a208d1589540ddb10fd71321f6925e42a5959c60541932b0ea6f6"
+  evidence: "https://github.com/michelpessoa/fabrica-central-teste/pull/11#pullrequestreview-6029752464"
 supersedes: null
 superseded_by: null
 tags: [fabrica-descoberta]

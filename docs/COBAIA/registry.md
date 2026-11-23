@@ -12,7 +12,7 @@ Total de documentos: **2**
 | ID | Título | Status | Owner | Atualizado | Relacionados |
 |---|---|---|---|---|---|
 | `SPEC-COBAIA-0001` | Mínimos de estoque com reposição sugerida e persistência em JSON | approved | Michel Pessoa | 2026-11-21 | — |
-| `SPEC-COBAIA-0002` | Histórico de movimentações de estoque e consultas de saldo calculadas a partir dele | in_review | Michel Pessoa | 2026-11-23 | — |
+| `SPEC-COBAIA-0002` | Histórico de movimentações de estoque e consultas de saldo calculadas a partir dele | approved | Michel Pessoa | 2026-11-23 | — |
 
 ## Documentos originados
 
