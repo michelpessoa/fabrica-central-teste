@@ -13,3 +13,13 @@ documents:
     relates_to: []
     path: "docs/COBAIA/03-spec/SPEC-COBAIA-0001.md"
     tags: [fabrica-descoberta]
+  - id: SPEC-COBAIA-0002
+    type: SPEC
+    title: "Histórico de movimentações de estoque e consultas de saldo calculadas a partir dele"
+    status: in_review
+    owner: "Michel Pessoa"
+    created: "2026-11-23"
+    updated: "2026-11-23"
+    relates_to: []
+    path: "docs/COBAIA/03-spec/SPEC-COBAIA-0002.md"
+    tags: [fabrica-descoberta]
